@@ -12,8 +12,8 @@ const OPTIONS_TEMPLATE = `
 :host([hidden]){display:none}
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
-.bar,.row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.bar{justify-content:space-between;margin-bottom:6px}
+.row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+[data-active]{display:block;margin-bottom:6px}
 button,select,input{font:inherit}
 button,select{min-height:30px;border-radius:4px;border:1px solid #bcbcbc;background:white;color:#303030;padding:3px 7px;cursor:pointer}
 button:hover:enabled{background:#f4f4f4;border-color:#888}
@@ -27,16 +27,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .pair select{min-width:0;max-width:65%}
 p{margin:5px 0}
 [data-rail]{height:23px;position:relative;border:1px solid #a4afa6;margin:10px 10px 14px;cursor:crosshair}
-[data-rail] button{position:absolute;top:10px;transform:translateX(-50%);width:17px;min-height:19px;padding:0;border:2px solid white;border-radius:7px;box-shadow:0 0 0 1px #345}
-[data-rail] button[aria-pressed=true]{outline:2px solid #18352c;outline-offset:2px}
+[data-rail] button{position:absolute;top:10px;transform:translateX(-50%);width:20px;min-height:22px;padding:0;border:2px solid white;border-radius:7px;box-shadow:0 0 0 1px #345;touch-action:none;user-select:none;cursor:grab}
+[data-rail] button:active{cursor:grabbing}
+[data-rail] button[aria-pressed=true]{z-index:1;outline:2px solid #18352c;outline-offset:2px}
+@media(pointer:coarse){[data-rail] button{width:24px;min-height:24px}}
 [data-use]{display:none}
 @media(max-width:1000px){[data-use]{display:inline-block}}
 </style>
 <section class="panel">
- <div class="bar">
-  <strong data-active></strong>
-  <button type="button" data-end data-ru="Выйти">Exit tool</button>
- </div>
+ <strong data-active></strong>
  <button type="button" data-use data-ru="Перейти к холсту">Return to canvas</button>
  <div class="row" data-polygon-options hidden>
   <button type="button" hidden data-back data-ru="Шаг назад">Undo point</button>
@@ -56,7 +55,7 @@ p{margin:5px 0}
    <label><input data-contiguous type="checkbox" checked><span data-ru="Только смежные пиксели">Contiguous pixels only</span></label>
   </div>
   <div class="block" data-gradient-options hidden>
-   <p data-ru="Проведите линию от начала градиента до его конца.">Drag from the start of the gradient to its end.</p>
+   <p data-ru="Коснитесь полосы, чтобы добавить точку цвета. Перетащите точку вдоль полосы. Проведите линию на холсте, чтобы нанести градиент.">Tap the strip to add a color stop. Drag a stop along the strip to move it. Drag on the canvas to apply the gradient.</p>
    <label class="pair"><span data-ru="Вид">Type</span><select data-kind><option value="linear" data-ru="Линейный">Linear</option><option value="radial" data-ru="Радиальный">Radial</option></select></label>
    <label class="pair"><span data-ru="Пресет">Preset</span><select data-preset></select></label>
    <div data-rail></div>

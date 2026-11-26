@@ -214,6 +214,7 @@ details[open] > summary::after { transform: translateY(.15rem) rotate(225deg); }
   padding: .2rem 1rem 1.12rem;
   color: var(--muted);
 }
+.browser-instructions { scroll-margin-block-start: 4.25rem; }
 .panel-content ol, .install-steps ol { padding-inline-start: 1.35rem; }
 li + li { margin-block-start: .45rem; }
 strong { color: #f2f3ed; }

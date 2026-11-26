@@ -24,7 +24,7 @@ function installDrawingTools(surface, toolbar, config) {
   skin.textContent = TOOLBAR_STYLE;
   document.head.append(skin);
   const q = s => root.querySelector(s);
-  const finishBtn = q('[data-finish]'), undoPt = q('[data-back]'), end = q('[data-end]');
+  const finishBtn = q('[data-finish]'), undoPt = q('[data-back]');
   const labels = Object.fromEntries(buttons.map(b => [b.dataset.leTool,b.getAttribute('aria-label')]));
   let tool = '', busy = false, editor = null, mask = null, nativeKey = null, handedOff = true;
   let showSelection = false;
@@ -36,7 +36,8 @@ function installDrawingTools(surface, toolbar, config) {
     toast.hidden = !text;
     if (text) toastTimer = setTimeout(() => { toast.hidden = true; }, 6500);
   }
-  const gradient = gradientEditor(q('[data-gradient-options]'), tr, notify);
+  const lifecycle = new AbortController();
+  const gradient = gradientEditor(q('[data-gradient-options]'), tr, notify, lifecycle.signal);
   function failure(error) {
     const messages = {
       layerUnavailable: tr('Select one of your visible, unlocked layers.', 'Выберите свой видимый незаблокированный слой.'),
@@ -93,7 +94,6 @@ function installDrawingTools(surface, toolbar, config) {
     q('[data-polygon-options]').hidden = finishBtn.hidden = undoPt.hidden = tool !== 'polygon';
     finishBtn.disabled = points.length < 3;
     undoPt.disabled = !points.length;
-    end.hidden = !tool;
     pad.style.pointerEvents = tool ? 'auto' : 'none';
     pad.style.cursor = tool ? 'crosshair' : '';
     for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.leTool === tool));
@@ -267,11 +267,6 @@ function installDrawingTools(surface, toolbar, config) {
   };
   finishBtn.onclick = polygonDone;
   undoPt.onclick = () => { points.pop(); controls(); requestDraw(); };
-  end.onclick = () => {
-    const current = buttons.find(b => b.dataset.leTool === tool);
-    chooseTool('');
-    current?.focus({preventScroll:true});
-  };
   q('[data-tolerance]').oninput = () => { q('[data-tolerance-value]').textContent = q('[data-tolerance]').value; };
   q('[data-tolerance]').onchange = q('[data-contiguous]').onchange = q('[data-combine]').onchange = adjustWand;
   q('[data-erase]').onclick = () => void paint('erase');
@@ -279,7 +274,6 @@ function installDrawingTools(surface, toolbar, config) {
   q('[data-clear]').onclick = () => {
     try { requireEditor(); selectMask(null); wandBase = null; controls(); notify(''); } catch(e) { failure(e); }
   };
-  const lifecycle = new AbortController();
   document.addEventListener('keydown', event => {
     if (!host.isConnected || !tool || busy || event.composedPath().some(el =>
       el.isContentEditable || el.matches?.('input,select,textarea,dialog,a[href]') ||

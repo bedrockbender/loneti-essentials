@@ -1,4 +1,4 @@
-function gradientEditor(container, tr, notify) {
+function gradientEditor(container, tr, notify, signal) {
   const storageKey = 'loneti-essentials:gradients:v1';
   const builtin = [
     { name: tr('Graphite', 'Графит'), type: 'linear', stops: [{ at: 0, color: '#20242c' }, { at: 100, color: '#ffffff' }] },
@@ -26,24 +26,34 @@ function gradientEditor(container, tr, notify) {
   const color = container.querySelector('[data-stop-color]');
   const position = container.querySelector('[data-position]');
   const remove = container.querySelector('[data-remove]');
+  let drag = null;
+  let pressedStrip = false;
   const write = (items) => {
     try { localStorage.setItem(storageKey, JSON.stringify(items)); saved = items; return true; }
     catch { notify(tr('Could not save presets on this device.', 'Не удалось сохранить пресеты на устройстве.')); return false; }
   };
   function sort() { return stops.slice().sort((a,b) => a.at - b.at); }
-  function draw() {
-    rail.style.backgroundImage = 'linear-gradient(to right,' + sort().map(s => s.color + ' ' + s.at + '%').join(',') + ')';
-    rail.replaceChildren();
-    stops.forEach((stop, index) => {
+  function buildMarkers() {
+    drag = null;
+    pressedStrip = false;
+    rail.replaceChildren(...stops.map((stop, index) => {
       const marker = document.createElement('button');
       marker.type = 'button';
+      marker.dataset.index = index;
+      return marker;
+    }));
+    draw();
+  }
+  function draw() {
+    rail.style.backgroundImage = 'linear-gradient(to right,' + sort().map(s => s.color + ' ' + s.at + '%').join(',') + ')';
+    stops.forEach((stop, index) => {
+      // A captured or keyboard-focused handle must stay in the DOM as it moves.
+      const marker = rail.children[index];
       marker.title = stop.at + '% ' + stop.color;
       marker.setAttribute('aria-label', tr('Color stop ', 'Цветовая точка ') + (index + 1) + ', ' + marker.title);
       marker.setAttribute('aria-pressed', String(stop === active));
       marker.style.left = stop.at + '%';
       marker.style.backgroundColor = stop.color;
-      marker.addEventListener('click', event => { event.stopPropagation(); active = stop; draw(); color.focus(); });
-      rail.append(marker);
     });
     position.value = active.at;
     color.value = active.color;
@@ -61,7 +71,7 @@ function gradientEditor(container, tr, notify) {
     active = stops[0];
     menu.replaceChildren(...[...builtin, ...saved].map((p,i) => option(i,p.name)));
     menu.value = String(index);
-    draw();
+    buildMarkers();
   }
   function nameInput(initial) {
     const result = window.prompt(tr('Preset name', 'Название пресета'), initial)?.trim();
@@ -79,16 +89,77 @@ function gradientEditor(container, tr, notify) {
     }
     active = { at, color: hex };
     stops.push(active);
+    buildMarkers();
+  }
+  function railPosition(clientX) {
+    return (clientX - rail.getBoundingClientRect().left - rail.clientLeft) * 100 / rail.clientWidth;
+  }
+  function boundedPosition(at) {
+    return Math.max(0, Math.min(100, Math.round(at)));
+  }
+  function moveStop(at) {
+    active.at = boundedPosition(at);
     draw();
   }
+  rail.addEventListener('pointerdown', event => {
+    if (drag || event.button !== 0 || !event.isPrimary) return;
+    pressedStrip = event.target === rail;
+    const marker = event.target.closest('button');
+    if (!marker) return;
+    active = stops[marker.dataset.index];
+    drag = { id:event.pointerId, x:event.clientX, width:rail.clientWidth, start:active.at };
+    marker.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    marker.focus({preventScroll:true});
+    draw();
+  });
+  function updateDrag(event) {
+    if (drag?.id !== event.pointerId) return;
+    moveStop(drag.start + (event.clientX - drag.x) * 100 / drag.width);
+  }
+  function cancelDrag() {
+    if (!drag) return;
+    active.at = drag.start;
+    drag = null;
+    draw();
+  }
+  // Some engines hit-test outside the shadow tree even after capturing a mouse pointer.
+  const tracking = { capture:true, signal };
+  window.addEventListener('pointermove', updateDrag, tracking);
+  window.addEventListener('pointerup', event => {
+    if (drag?.id !== event.pointerId) return;
+    updateDrag(event);
+    drag = null;
+  }, tracking);
+  window.addEventListener('pointercancel', event => {
+    if (drag?.id === event.pointerId) cancelDrag();
+  }, tracking);
+  window.addEventListener('blur', cancelDrag, {signal});
   rail.addEventListener('click', event => {
-    const box = rail.getBoundingClientRect();
-    add(Math.max(0,Math.min(100,Math.round((event.clientX-box.left)*100/box.width))));
+    const marker = event.target.closest('button');
+    if (marker && event.detail === 0 && !drag) {
+      // Keyboard activation has no preceding pointerdown.
+      active = stops[marker.dataset.index];
+      draw();
+    } else if (event.target === rail && pressedStrip && !drag) {
+      add(boundedPosition(railPosition(event.clientX)));
+    }
+    pressedStrip = false;
+  });
+  rail.addEventListener('keydown', event => {
+    const marker = event.target.closest('button');
+    if (!marker || drag || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    event.preventDefault();
+    active = stops[marker.dataset.index];
+    const step = event.shiftKey ? 10 : 1;
+    if (event.key === 'Home') moveStop(0);
+    else if (event.key === 'End') moveStop(100);
+    else moveStop(active.at + (event.key === 'ArrowRight' ? step : -step));
   });
   menu.onchange = () => open(Number(menu.value));
   kind.onchange = () => { type = kind.value; };
   color.oninput = () => { active.color = color.value; draw(); };
-  position.oninput = () => { active.at = Number(position.value); draw(); };
+  position.oninput = () => moveStop(Number(position.value));
   container.querySelector('[data-add-stop]').onclick = () => {
     const ordered = [{at:0}, ...sort(), {at:100}];
     let best = 0, mid = 50;
@@ -102,7 +173,7 @@ function gradientEditor(container, tr, notify) {
     if (stops.length <= 2) return;
     stops.splice(stops.indexOf(active),1);
     active = stops[0];
-    draw();
+    buildMarkers();
   };
   container.querySelector('[data-save-preset]').onclick = () => {
     const name = nameInput(chosen >= builtin.length ? saved[chosen-builtin.length].name : '');

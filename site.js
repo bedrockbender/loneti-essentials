@@ -6,29 +6,6 @@
   const buttons = switcher.querySelectorAll('[data-language]');
   const localizedContent = document.querySelectorAll('[data-locale]');
   const supported = new Set(['en-US', 'ru-RU']);
-  const browserGuide = document.getElementById('browser');
-  const browserSummary = browserGuide.querySelector('summary');
-
-  function openBrowserGuide(focusSummary = false) {
-    browserGuide.open = true;
-    if (focusSummary) browserSummary.focus({ preventScroll: true });
-    browserGuide.scrollIntoView();
-  }
-
-  for (const shortcut of document.querySelectorAll('[data-browser-shortcut]')) {
-    shortcut.addEventListener('click', event => {
-      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      event.preventDefault();
-      if (location.hash !== '#browser') history.pushState(null, '', '#browser');
-      openBrowserGuide(true);
-    });
-  }
-
-  function openBrowserHash() {
-    if (location.hash === '#browser') openBrowserGuide();
-  }
-
-  window.addEventListener('hashchange', openBrowserHash);
 
   // Keep the publisher's browser selector as the fallback on mobile and other browsers.
   function desktopBrowser(agent) {
@@ -86,5 +63,4 @@
 
   displayLanguage(preferredLanguage());
   switcher.hidden = false;
-  openBrowserHash();
 })();

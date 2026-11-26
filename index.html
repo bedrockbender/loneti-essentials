@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#151715">
   <title>Loneti essentials</title>
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
-  <link rel="stylesheet" href="./site.css">
-  <script defer src="./site.js"></script>
+  <link rel="stylesheet" href="./site.css?v=browser-guide">
+  <script defer src="./site.js?v=browser-guide"></script>
 </head>
 <body id="top">
   <header class="site-header">
@@ -29,7 +29,7 @@
           <p class="intro">Draw on LONETI with selection and gradient tools. Save Smiles from comments and rooms and share them as packs.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="https://github.com/bedrockbender/loneti-smile-collector/releases/latest/download/Loneti-essentials.apk">Download for Android</a>
-            <a class="button button-secondary" data-browser-shortcut href="#browser">I'm a PC user</a>
+            <a class="button button-secondary" href="#browser">I'm a PC user</a>
           </div>
           <p class="platform">APK for Android 8.0 and newer</p>
         </div>
@@ -37,7 +37,7 @@
           <p class="intro">Рисуйте на LONETI с помощью выделения и градиентов. Сохраняйте смайлы из комментариев и чатов и делитесь наборами.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="https://github.com/bedrockbender/loneti-smile-collector/releases/latest/download/Loneti-essentials.apk">Скачать для Android</a>
-            <a class="button button-secondary" data-browser-shortcut href="#browser">Я сижу с компа!</a>
+            <a class="button button-secondary" href="#browser">Я сижу с компа!</a>
           </div>
           <p class="platform">APK для Android 8.0 и новее</p>
         </div>
@@ -68,12 +68,13 @@
           <p>Используйте актуальную версию <strong>Android System WebView</strong>. <a href="https://support.google.com/pixelphone/answer/7391672?hl=ru">Справка по установке на Android</a>.</p>
         </div>
       </details>
-      <details class="setup-panel" id="browser">
+      <details class="setup-panel" id="browser-guide">
         <summary>
           <span data-locale="en-US">Use the browser userscript</span>
           <span data-locale="ru-RU" lang="ru-RU" hidden>Установка скрипта в браузере</span>
         </summary>
-        <div class="browser-instructions">
+        <!-- A fragment target inside the disclosure lets the browser reveal it without JavaScript. -->
+        <div class="browser-instructions" id="browser">
           <div data-locale="en-US">
             <ol class="install-steps" aria-label="Installation steps">
               <li>
@@ -167,6 +168,32 @@
       </details>
     </div>
 
+    <script>
+      // Keep the PC shortcut independent of the deferred language and store script.
+      (() => {
+        const guide = document.getElementById('browser-guide');
+        const summary = guide.querySelector('summary');
+
+        for (const shortcut of document.querySelectorAll('.hero-actions a[href="#browser"]')) {
+          shortcut.addEventListener('click', event => {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            guide.open = true;
+            if (location.hash !== '#browser') history.pushState(null, '', '#browser');
+            event.preventDefault();
+            summary.focus({ preventScroll: true });
+            guide.scrollIntoView();
+          });
+        }
+
+        function openFromHash() {
+          if (location.hash === '#browser') guide.open = true;
+        }
+
+        window.addEventListener('hashchange', openFromHash);
+        openFromHash();
+      })();
+    </script>
+
     <div class="frame guide">
       <nav class="guide-nav" aria-label="On this page" data-locale="en-US">
         <a href="#draw">Drawing tools</a>
@@ -194,7 +221,7 @@
               <dt>Magic wand</dt>
               <dd>Select similar colors with adjustable tolerance. Turn off <strong>Contiguous</strong> to select matching areas across the layer.</dd>
               <dt>Gradient</dt>
-              <dd>Choose a linear or radial gradient. Tap the color strip to add a stop, choose its color and position, and save the preset if you want to reuse it. Drag across the drawing to apply it. An active selection limits the fill.</dd>
+              <dd>Choose a linear or radial gradient. Tap the color strip to add a stop, then drag it along the strip or use the <strong>Position</strong> slider. Choose the stop’s color and save the preset to reuse it. Drag across the drawing to apply the gradient. An active selection limits the fill.</dd>
             </dl>
             <p>In rooms, other artists see the gradient in their regular LONETI editor. If the edit is too large to send, your layer stays as it was.</p>
           </div>
@@ -207,7 +234,7 @@
               <dt>Волшебная палочка</dt>
               <dd>Выделяйте похожие цвета с настраиваемым допуском. Отключите выделение только соседних пикселей, чтобы захватить совпадающие области по всему слою.</dd>
               <dt>Градиент</dt>
-              <dd>Выберите линейный или радиальный градиент. Коснитесь цветной полосы, чтобы добавить точку, и задайте её цвет и положение. Настройки можно сохранить как пресет. Проведите линию по рисунку, чтобы применить градиент. Если есть выделение, градиент останется внутри него.</dd>
+              <dd>Выберите линейный или радиальный градиент. Коснитесь цветной полосы, чтобы добавить точку. Перетащите её вдоль полосы или передвиньте ползунок <strong>«Положение»</strong>. Выберите цвет точки и сохраните пресет, чтобы использовать его снова. Проведите линию по рисунку, чтобы применить градиент. Если есть выделение, градиент останется внутри него.</dd>
             </dl>
             <p>В комнате градиент виден другим художникам в обычном редакторе LONETI. Если изменение слишком велико для отправки, слой сохранит прежний вид.</p>
           </div>

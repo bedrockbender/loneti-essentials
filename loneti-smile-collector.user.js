@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Loneti essentials
 // @namespace    loneti-smile-collector
-// @version      3.1.0
+// @version      3.1.1
 // @homepageURL  https://bedrockbender.github.io/loneti-smile-collector/
 // @downloadURL  https://bedrockbender.github.io/loneti-smile-collector/loneti-smile-collector.user.js
 // @updateURL    https://bedrockbender.github.io/loneti-smile-collector/loneti-smile-collector.user.js
@@ -706,8 +706,8 @@ const OPTIONS_TEMPLATE = `
 :host([hidden]){display:none}
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
-.bar,.row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.bar{justify-content:space-between;margin-bottom:6px}
+.row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+[data-active]{display:block;margin-bottom:6px}
 button,select,input{font:inherit}
 button,select{min-height:30px;border-radius:4px;border:1px solid #bcbcbc;background:white;color:#303030;padding:3px 7px;cursor:pointer}
 button:hover:enabled{background:#f4f4f4;border-color:#888}
@@ -721,16 +721,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .pair select{min-width:0;max-width:65%}
 p{margin:5px 0}
 [data-rail]{height:23px;position:relative;border:1px solid #a4afa6;margin:10px 10px 14px;cursor:crosshair}
-[data-rail] button{position:absolute;top:10px;transform:translateX(-50%);width:17px;min-height:19px;padding:0;border:2px solid white;border-radius:7px;box-shadow:0 0 0 1px #345}
-[data-rail] button[aria-pressed=true]{outline:2px solid #18352c;outline-offset:2px}
+[data-rail] button{position:absolute;top:10px;transform:translateX(-50%);width:20px;min-height:22px;padding:0;border:2px solid white;border-radius:7px;box-shadow:0 0 0 1px #345;touch-action:none;user-select:none;cursor:grab}
+[data-rail] button:active{cursor:grabbing}
+[data-rail] button[aria-pressed=true]{z-index:1;outline:2px solid #18352c;outline-offset:2px}
+@media(pointer:coarse){[data-rail] button{width:24px;min-height:24px}}
 [data-use]{display:none}
 @media(max-width:1000px){[data-use]{display:inline-block}}
 </style>
 <section class="panel">
- <div class="bar">
-  <strong data-active></strong>
-  <button type="button" data-end data-ru="Выйти">Exit tool</button>
- </div>
+ <strong data-active></strong>
  <button type="button" data-use data-ru="Перейти к холсту">Return to canvas</button>
  <div class="row" data-polygon-options hidden>
   <button type="button" hidden data-back data-ru="Шаг назад">Undo point</button>
@@ -750,7 +749,7 @@ p{margin:5px 0}
    <label><input data-contiguous type="checkbox" checked><span data-ru="Только смежные пиксели">Contiguous pixels only</span></label>
   </div>
   <div class="block" data-gradient-options hidden>
-   <p data-ru="Проведите линию от начала градиента до его конца.">Drag from the start of the gradient to its end.</p>
+   <p data-ru="Коснитесь полосы, чтобы добавить точку цвета. Перетащите точку вдоль полосы. Проведите линию на холсте, чтобы нанести градиент.">Tap the strip to add a color stop. Drag a stop along the strip to move it. Drag on the canvas to apply the gradient.</p>
    <label class="pair"><span data-ru="Вид">Type</span><select data-kind><option value="linear" data-ru="Линейный">Linear</option><option value="radial" data-ru="Радиальный">Radial</option></select></label>
    <label class="pair"><span data-ru="Пресет">Preset</span><select data-preset></select></label>
    <div data-rail></div>
@@ -808,7 +807,7 @@ const TOOLBAR_STYLE = `
 #cont_config[data-le-custom-active] > .one_config{display:none}
 `;
 
-function gradientEditor(container, tr, notify) {
+function gradientEditor(container, tr, notify, signal) {
   const storageKey = 'loneti-essentials:gradients:v1';
   const builtin = [
     { name: tr('Graphite', 'Графит'), type: 'linear', stops: [{ at: 0, color: '#20242c' }, { at: 100, color: '#ffffff' }] },
@@ -836,24 +835,34 @@ function gradientEditor(container, tr, notify) {
   const color = container.querySelector('[data-stop-color]');
   const position = container.querySelector('[data-position]');
   const remove = container.querySelector('[data-remove]');
+  let drag = null;
+  let pressedStrip = false;
   const write = (items) => {
     try { localStorage.setItem(storageKey, JSON.stringify(items)); saved = items; return true; }
     catch { notify(tr('Could not save presets on this device.', 'Не удалось сохранить пресеты на устройстве.')); return false; }
   };
   function sort() { return stops.slice().sort((a,b) => a.at - b.at); }
-  function draw() {
-    rail.style.backgroundImage = 'linear-gradient(to right,' + sort().map(s => s.color + ' ' + s.at + '%').join(',') + ')';
-    rail.replaceChildren();
-    stops.forEach((stop, index) => {
+  function buildMarkers() {
+    drag = null;
+    pressedStrip = false;
+    rail.replaceChildren(...stops.map((stop, index) => {
       const marker = document.createElement('button');
       marker.type = 'button';
+      marker.dataset.index = index;
+      return marker;
+    }));
+    draw();
+  }
+  function draw() {
+    rail.style.backgroundImage = 'linear-gradient(to right,' + sort().map(s => s.color + ' ' + s.at + '%').join(',') + ')';
+    stops.forEach((stop, index) => {
+      // A captured or keyboard-focused handle must stay in the DOM as it moves.
+      const marker = rail.children[index];
       marker.title = stop.at + '% ' + stop.color;
       marker.setAttribute('aria-label', tr('Color stop ', 'Цветовая точка ') + (index + 1) + ', ' + marker.title);
       marker.setAttribute('aria-pressed', String(stop === active));
       marker.style.left = stop.at + '%';
       marker.style.backgroundColor = stop.color;
-      marker.addEventListener('click', event => { event.stopPropagation(); active = stop; draw(); color.focus(); });
-      rail.append(marker);
     });
     position.value = active.at;
     color.value = active.color;
@@ -871,7 +880,7 @@ function gradientEditor(container, tr, notify) {
     active = stops[0];
     menu.replaceChildren(...[...builtin, ...saved].map((p,i) => option(i,p.name)));
     menu.value = String(index);
-    draw();
+    buildMarkers();
   }
   function nameInput(initial) {
     const result = window.prompt(tr('Preset name', 'Название пресета'), initial)?.trim();
@@ -889,16 +898,77 @@ function gradientEditor(container, tr, notify) {
     }
     active = { at, color: hex };
     stops.push(active);
+    buildMarkers();
+  }
+  function railPosition(clientX) {
+    return (clientX - rail.getBoundingClientRect().left - rail.clientLeft) * 100 / rail.clientWidth;
+  }
+  function boundedPosition(at) {
+    return Math.max(0, Math.min(100, Math.round(at)));
+  }
+  function moveStop(at) {
+    active.at = boundedPosition(at);
     draw();
   }
+  rail.addEventListener('pointerdown', event => {
+    if (drag || event.button !== 0 || !event.isPrimary) return;
+    pressedStrip = event.target === rail;
+    const marker = event.target.closest('button');
+    if (!marker) return;
+    active = stops[marker.dataset.index];
+    drag = { id:event.pointerId, x:event.clientX, width:rail.clientWidth, start:active.at };
+    marker.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    marker.focus({preventScroll:true});
+    draw();
+  });
+  function updateDrag(event) {
+    if (drag?.id !== event.pointerId) return;
+    moveStop(drag.start + (event.clientX - drag.x) * 100 / drag.width);
+  }
+  function cancelDrag() {
+    if (!drag) return;
+    active.at = drag.start;
+    drag = null;
+    draw();
+  }
+  // Some engines hit-test outside the shadow tree even after capturing a mouse pointer.
+  const tracking = { capture:true, signal };
+  window.addEventListener('pointermove', updateDrag, tracking);
+  window.addEventListener('pointerup', event => {
+    if (drag?.id !== event.pointerId) return;
+    updateDrag(event);
+    drag = null;
+  }, tracking);
+  window.addEventListener('pointercancel', event => {
+    if (drag?.id === event.pointerId) cancelDrag();
+  }, tracking);
+  window.addEventListener('blur', cancelDrag, {signal});
   rail.addEventListener('click', event => {
-    const box = rail.getBoundingClientRect();
-    add(Math.max(0,Math.min(100,Math.round((event.clientX-box.left)*100/box.width))));
+    const marker = event.target.closest('button');
+    if (marker && event.detail === 0 && !drag) {
+      // Keyboard activation has no preceding pointerdown.
+      active = stops[marker.dataset.index];
+      draw();
+    } else if (event.target === rail && pressedStrip && !drag) {
+      add(boundedPosition(railPosition(event.clientX)));
+    }
+    pressedStrip = false;
+  });
+  rail.addEventListener('keydown', event => {
+    const marker = event.target.closest('button');
+    if (!marker || drag || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    event.preventDefault();
+    active = stops[marker.dataset.index];
+    const step = event.shiftKey ? 10 : 1;
+    if (event.key === 'Home') moveStop(0);
+    else if (event.key === 'End') moveStop(100);
+    else moveStop(active.at + (event.key === 'ArrowRight' ? step : -step));
   });
   menu.onchange = () => open(Number(menu.value));
   kind.onchange = () => { type = kind.value; };
   color.oninput = () => { active.color = color.value; draw(); };
-  position.oninput = () => { active.at = Number(position.value); draw(); };
+  position.oninput = () => moveStop(Number(position.value));
   container.querySelector('[data-add-stop]').onclick = () => {
     const ordered = [{at:0}, ...sort(), {at:100}];
     let best = 0, mid = 50;
@@ -912,7 +982,7 @@ function gradientEditor(container, tr, notify) {
     if (stops.length <= 2) return;
     stops.splice(stops.indexOf(active),1);
     active = stops[0];
-    draw();
+    buildMarkers();
   };
   container.querySelector('[data-save-preset]').onclick = () => {
     const name = nameInput(chosen >= builtin.length ? saved[chosen-builtin.length].name : '');
@@ -970,7 +1040,7 @@ function installDrawingTools(surface, toolbar, config) {
   skin.textContent = TOOLBAR_STYLE;
   document.head.append(skin);
   const q = s => root.querySelector(s);
-  const finishBtn = q('[data-finish]'), undoPt = q('[data-back]'), end = q('[data-end]');
+  const finishBtn = q('[data-finish]'), undoPt = q('[data-back]');
   const labels = Object.fromEntries(buttons.map(b => [b.dataset.leTool,b.getAttribute('aria-label')]));
   let tool = '', busy = false, editor = null, mask = null, nativeKey = null, handedOff = true;
   let showSelection = false;
@@ -982,7 +1052,8 @@ function installDrawingTools(surface, toolbar, config) {
     toast.hidden = !text;
     if (text) toastTimer = setTimeout(() => { toast.hidden = true; }, 6500);
   }
-  const gradient = gradientEditor(q('[data-gradient-options]'), tr, notify);
+  const lifecycle = new AbortController();
+  const gradient = gradientEditor(q('[data-gradient-options]'), tr, notify, lifecycle.signal);
   function failure(error) {
     const messages = {
       layerUnavailable: tr('Select one of your visible, unlocked layers.', 'Выберите свой видимый незаблокированный слой.'),
@@ -1039,7 +1110,6 @@ function installDrawingTools(surface, toolbar, config) {
     q('[data-polygon-options]').hidden = finishBtn.hidden = undoPt.hidden = tool !== 'polygon';
     finishBtn.disabled = points.length < 3;
     undoPt.disabled = !points.length;
-    end.hidden = !tool;
     pad.style.pointerEvents = tool ? 'auto' : 'none';
     pad.style.cursor = tool ? 'crosshair' : '';
     for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.leTool === tool));
@@ -1213,11 +1283,6 @@ function installDrawingTools(surface, toolbar, config) {
   };
   finishBtn.onclick = polygonDone;
   undoPt.onclick = () => { points.pop(); controls(); requestDraw(); };
-  end.onclick = () => {
-    const current = buttons.find(b => b.dataset.leTool === tool);
-    chooseTool('');
-    current?.focus({preventScroll:true});
-  };
   q('[data-tolerance]').oninput = () => { q('[data-tolerance-value]').textContent = q('[data-tolerance]').value; };
   q('[data-tolerance]').onchange = q('[data-contiguous]').onchange = q('[data-combine]').onchange = adjustWand;
   q('[data-erase]').onclick = () => void paint('erase');
@@ -1225,7 +1290,6 @@ function installDrawingTools(surface, toolbar, config) {
   q('[data-clear]').onclick = () => {
     try { requireEditor(); selectMask(null); wandBase = null; controls(); notify(''); } catch(e) { failure(e); }
   };
-  const lifecycle = new AbortController();
   document.addEventListener('keydown', event => {
     if (!host.isConnected || !tool || busy || event.composedPath().some(el =>
       el.isContentEditable || el.matches?.('input,select,textarea,dialog,a[href]') ||
