@@ -43,7 +43,10 @@ run_test() {
     local output
     output="$("$adb" shell am instrument -w -r -e app_package "$app" "$@" "$runner")"
     printf '%s\n' "$output"
-    grep -q 'LONETI_ANDROID_SMOKE_OK' <<<"$output"
+    if ! grep -q 'LONETI_ANDROID_SMOKE_OK' <<<"$output"; then
+        "$adb" logcat -d -t 250 -s chromium:E AndroidRuntime:E ActivityManager:W
+        return 1
+    fi
 }
 
 build_test test.loneti.smoke "$work/launcher-test.apk"

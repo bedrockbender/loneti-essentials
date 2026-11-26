@@ -159,13 +159,15 @@ public final class SmokeTest extends Instrumentation {
 
     private void dragGradientStop(WebView web) throws Exception {
         String options = "document.querySelector('#cont_config [data-loneti-essentials=options]').shadowRoot";
-        evaluate(web, "document.querySelector('#tools button[data-le-tool=gradient]').click()");
+        evaluate(web, "(()=>{document.querySelector('#tools button[data-le-tool=gradient]').click();return true;})()");
         awaitJs(web, options + ".querySelector('[data-rail] button').getBoundingClientRect().width>0",
                 "the Gradient color stop controls");
         JSONArray geometry = new JSONArray(evaluate(web, "(()=>{const options=" + options
                 + ", rail=options.querySelector('[data-rail]'), stop=rail.firstElementChild;"
+                + "stop.scrollIntoView({block:'center'});"
                 + "stop.addEventListener('pointerdown',event=>{window.fixtureStopPointer=event.pointerType;},{once:true});"
-                + "const r=stop.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2,"
+                + "const r=stop.getBoundingClientRect(), x=r.x+r.width/2, y=r.y+r.height/2;"
+                + "if(options.elementFromPoint(x,y)!==stop)throw Error('Color stop outside fixture viewport');return [x,y,"
                 + "rail.clientWidth*0.40,innerWidth];})()"));
         int[] origin = new int[2];
         int[] width = new int[1];
@@ -257,7 +259,7 @@ public final class SmokeTest extends Instrumentation {
             result.set(value);
             latch.countDown();
         }));
-        require(latch.await(10, TimeUnit.SECONDS), "WebView did not evaluate fixture JavaScript");
+        require(latch.await(20, TimeUnit.SECONDS), "No WebView callback for " + script.substring(0, Math.min(140, script.length())));
         return result.get();
     }
 

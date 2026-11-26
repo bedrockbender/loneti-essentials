@@ -86,6 +86,7 @@ final class SmokeSite extends WebViewClient {
 
     private static WebResourceResponse editor() {
         return page("<a href='/pict400_100'>Open smoke drawing</a>"
+                        + "<style>#tools .one_tool{display:inline-block;width:30px;height:30px}</style>"
                         + "<div class='cont-draw js--cont-draw'>"
                         + "<div class='cont-tools-box box-mobile-menu'>"
                         + "<div class='content-mobile-menu cont-tools-box__content-mobile'><div id='cont_tools'>"
