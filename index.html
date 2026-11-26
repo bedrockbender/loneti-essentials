@@ -8,7 +8,7 @@
   <title>Loneti essentials</title>
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
   <link rel="canonical" href="https://bedrockbender.github.io/loneti-essentials/">
-  <link rel="stylesheet" href="./site.css?v=source-links">
+  <link rel="stylesheet" href="./site.css?v=link-warning">
   <script>
     if (location.hostname === 'bedrockbender.github.io' && /^\/loneti-smile-collector(?:\/index\.html|\/)?$/.test(location.pathname)) {
       location.replace('/loneti-essentials/' + location.search + location.hash);
@@ -38,7 +38,7 @@
             <a class="button button-secondary" href="#browser">I'm a PC user</a>
             <a class="button button-source" href="https://github.com/bedrockbender/loneti-essentials"><img src="./icons/github.svg" width="18" height="18" alt="">Source code</a>
           </div>
-          <p class="platform">Version 2.3.0 · Android 8.0 and newer</p>
+          <p class="platform">Version 2.4.0 · Android 8.0 and newer</p>
         </div>
         <div data-locale="ru-RU" lang="ru-RU" hidden>
           <p class="intro">В редакторе LONETI появляются градиенты и волшебная палочка для выделения по цвету. А любимые смайлы можно собирать в наборы и делиться ими с друзьями.</p>
@@ -47,7 +47,7 @@
             <a class="button button-secondary" href="#browser">Я сижу с компа!</a>
             <a class="button button-source" href="https://github.com/bedrockbender/loneti-essentials"><img src="./icons/github.svg" width="18" height="18" alt="">Исходный код</a>
           </div>
-          <p class="platform">Версия 2.3.0 · Android 8.0 и новее</p>
+          <p class="platform">Версия 2.4.0 · Android 8.0 и новее</p>
         </div>
       </div>
       <a class="hero-preview" data-locale="en-US" href="./screenshots/smile-packs.png" title="Open full-size screenshot">
@@ -59,6 +59,10 @@
     </section>
 
     <div class="frame setup" id="setup">
+      <aside class="link-warning">
+        <div data-locale="en-US"><strong>Posting links on LONETI</strong><p>Despite what you may have heard, the admin is alive and well. They still ban people for posting links on the Wall, in rooms, or in comments. Play it safe and share links through another service.</p></div>
+        <div data-locale="ru-RU" lang="ru-RU" hidden><strong>Ссылки на LONETI</strong><p>Вопреки расхожему убеждению - админ живее всех живых и нещадно банит тех, кто оставляет ссылки на стене, в комнатах или в комментах. Будьте осторожны. старайтесь не постить ссылки на loneti, если есть желание поделиться - используйте сторонние сервисы</p></div>
+      </aside>
       <details class="setup-panel" id="android-setup" open>
         <summary>
           <span data-locale="en-US">Install the Android app</span>
@@ -122,7 +126,7 @@
               </li>
               <li>
                 <h2>Add the userscript</h2>
-                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Install the userscript (3.2.0)</a>
+                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Install the userscript (3.3.0)</a>
                 <p>Open the link above and confirm the installation or update in Tampermonkey. Reload any open LONETI tabs.</p>
                 <details><summary>Enable early loading for the drawing tools</summary><p>Open the Tampermonkey menu in your browser toolbar, choose <strong>Dashboard</strong>, then <strong>Settings</strong>. Under <strong>Content Script API</strong>, choose <strong>UserScripts API Dynamic</strong>. If that option is hidden, switch the configuration mode to <strong>Advanced</strong>. Save and reload the drawing tab. This lets the tools start alongside LONETI’s editor. <a href="https://www.tampermonkey.net/documentation.php?q=content_script_api">Tampermonkey’s guide</a>.</p></details>
                 <details><summary>I see code instead of an Install button</summary><p>Check that Tampermonkey is enabled in your browser and that you finished step 1. Close the code tab and open the userscript link again. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Manual installation instructions</a>.</p></details>
@@ -167,7 +171,7 @@
               </li>
               <li>
                 <h2>Добавьте скрипт</h2>
-                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Установить скрипт (3.2.0)</a>
+                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Установить скрипт (3.3.0)</a>
                 <p>Откройте ссылку выше и подтвердите установку или обновление в Tampermonkey. Обновите открытые вкладки LONETI.</p>
                 <details><summary>Включить ранний запуск инструментов рисования</summary><p>Нажмите значок Tampermonkey на панели браузера, выберите <strong>«Панель управления»</strong> и откройте вкладку <strong>«Настройки»</strong>. В пункте <strong>Content Script API</strong> выберите <strong>UserScripts API Dynamic</strong>. Если этого пункта не видно, переключите режим настроек на расширенный. Сохраните изменения и обновите вкладку с рисунком. <a href="https://www.tampermonkey.net/documentation.php?locale=ru&amp;q=content_script_api">Справка Tampermonkey</a>.</p></details>
                 <details><summary>Вместо кнопки «Установить» вижу код</summary><p>Проверьте, что Tampermonkey включён в браузере и вы выполнили шаг 1. Закройте вкладку с кодом и ещё раз откройте ссылку установки скрипта. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Как установить скрипт вручную</a>.</p></details>
@@ -237,6 +241,12 @@
               <figcaption>Magic wand is highlighted in the top row. Gradient is at the right of the second row.</figcaption>
             </figure>
             <dl class="tool-list">
+              <dt>Curve</dt>
+              <dd>Choose Round ink for a uniform line or Hand ink for a gently varying width. Set the width and color, tap to place points, then choose <strong>Finish</strong>.</dd>
+              <dt>Pressure</dt>
+              <dd>Drag a curve point right or up to make the stroke thicker there. Drag left or down to taper it to a fine tip.</dd>
+              <dt>Edit</dt>
+              <dd>Drag points to reshape a curve. The action menu also lets you move, duplicate, split or join strokes. Control points stay available during the current editing session. LONETI saves the finished lines as pixels.</dd>
               <dt>Polygon</dt>
               <dd>Tap to place vertices, including in the space outside the drawing. Tap the first point or <strong>Finish</strong> to select the enclosed pixels inside the canvas.</dd>
               <dt>Magic wand</dt>
@@ -256,6 +266,12 @@
               <figcaption>Волшебная палочка выделена в верхнем ряду. Градиент находится справа во втором ряду.</figcaption>
             </figure>
             <dl class="tool-list">
+              <dt>Кривая</dt>
+              <dd>Выберите круглую тушь для ровной линии или рукописную для штриха переменной ширины. Задайте толщину и цвет, расставьте точки и нажмите <strong>«Готово»</strong>.</dd>
+              <dt>Нажим</dt>
+              <dd>Потяните точку кривой вправо или вверх, чтобы утолщить линию в этом месте. Движение влево или вниз сужает штрих до тонкого кончика.</dd>
+              <dt>Правка</dt>
+              <dd>Перетаскивайте точки, чтобы изменить форму кривой. В меню действий можно перемещать, копировать, разделять и соединять штрихи. Точки доступны, пока открыт редактор. LONETI сохраняет готовые линии в виде пикселей.</dd>
               <dt>Многоугольник</dt>
               <dd>Касайтесь рабочей области, чтобы поставить вершины. Точки можно размещать и за пределами холста. Нажмите на первую точку или <strong>«Готово»</strong>, чтобы выделить часть фигуры внутри холста.</dd>
               <dt>Волшебная палочка</dt>
@@ -295,12 +311,14 @@
         <section class="guide-section" id="organize">
           <div data-locale="en-US">
             <h2>Organize your library</h2>
+            <p>To hide your own avatar and nickname on this device, open <strong>Settings → Loneti essentials</strong> and check <strong>Hide my avatar and nickname on this device</strong>. You’ll see “You” in supported account and author labels. Other people see your usual profile.</p>
             <p>On <strong>My emotes</strong>, choose <strong>New pack</strong> and name it. Smiles begin in <strong>Unsorted</strong>. Use the menu below each Smile to move it to a pack, and choose <strong>Rename</strong> to edit a pack name.</p>
             <p>Expand pack headings in your library or in the Smile picker for comments and rooms. Inside a pack, the newest library entries appear first. Click a Smile in the picker to use it as usual.</p>
             <p class="note">LONETI stores the Smiles in your account. Your app or browser remembers which pack each Smile belongs to. To bring a named pack to another device, download its <code>.lesp</code> file and install it there.</p>
           </div>
           <div data-locale="ru-RU" lang="ru-RU" hidden>
             <h2>Организация библиотеки</h2>
+            <p>Чтобы скрыть свой аватар и ник на этом устройстве, откройте <strong>Настройки → Loneti essentials</strong> и включите <strong>«Скрывать мой аватар и ник на этом устройстве»</strong>. В меню аккаунта и рядом с вашими сообщениями появится «Вы». Другие пользователи видят ваш обычный профиль.</p>
             <p>На странице <strong>«Мои смайлы»</strong> нажмите <strong>«Новый набор»</strong> и назовите набор. Смайлы без набора находятся в разделе <strong>«Без набора»</strong>. Выберите набор в меню под нужным смайлом. Чтобы изменить название набора, нажмите <strong>«Переименовать»</strong>.</p>
             <p>Наборы раскрываются по нажатию на заголовок в библиотеке и в меню выбора смайлов в комментариях и чатах комнат. Новые записи библиотеки отображаются первыми. Нажмите на смайл в меню, чтобы использовать его как обычно.</p>
             <p class="note">Сами смайлы хранятся в аккаунте LONETI. Приложение или браузер запоминает, в какой набор вы положили каждый смайл. Чтобы перенести набор на другое устройство, скачайте файл <code>.lesp</code> и установите его там.</p>

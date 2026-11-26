@@ -38,6 +38,12 @@ function installDrawingTools(surface, toolbar, config) {
   }
   const lifecycle = new AbortController();
   const gradient = gradientEditor(q('[data-gradient-options]'), tr, notify, lifecycle.signal);
+  const curves = createCurveTools(q,tr,notify,requestDraw);
+  const isInk = name => ['curve','pressure','edit'].includes(name);
+  function curveClip() {
+    if (mask) stencil ||= maskTexture(mask,editor.width,editor.height,false);
+    return mask ? stencil : null;
+  }
   function failure(error) {
     const messages = {
       layerUnavailable: tr('Select one of your visible, unlocked layers.', 'Выберите свой видимый незаблокированный слой.'),
@@ -85,15 +91,17 @@ function installDrawingTools(surface, toolbar, config) {
     if (!ok) notify(tr('This selection applies to Gradient, Fill selection and Erase selection.', 'Это выделение действует для градиента, заливки и стирания выделенной области.'));
     requestDraw();
   }
-  function resetGesture() { points = []; hover = null; drag = null; pointer = null; wandBase = null; }
+  function resetGesture() { points = []; hover = null; drag = null; pointer = null; wandBase = null; curves.reset(); }
   function controls() {
     options.hidden = !tool && !(showSelection && mask);
     toolsContainer.toggleAttribute('data-le-custom-active', !!tool);
     config.toggleAttribute('data-le-custom-active', !!tool);
     q('[data-active]').textContent = labels[tool] || tr('Selection','Выделение');
-    q('[data-polygon-options]').hidden = finishBtn.hidden = undoPt.hidden = tool !== 'polygon';
-    finishBtn.disabled = points.length < 3;
-    undoPt.disabled = !points.length;
+    q('[data-polygon-options]').hidden = finishBtn.hidden = undoPt.hidden = tool !== 'polygon' && tool !== 'curve';
+    finishBtn.disabled = busy || (tool === 'curve' ? !curves.count() : points.length < 3);
+    undoPt.disabled = busy || (tool === 'curve' ? !curves.count() : !points.length);
+    q('[data-cancel-curve]').hidden = tool !== 'curve' || !curves.count() || busy;
+    for (const name of ['curve','pressure','edit']) q('[data-'+name+'-options]').hidden = tool !== name;
     pad.style.pointerEvents = tool ? 'auto' : 'none';
     pad.style.cursor = tool ? 'crosshair' : '';
     for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.leTool === tool));
@@ -120,17 +128,42 @@ function installDrawingTools(surface, toolbar, config) {
       requireEditor();
       if (tool !== next) resetGesture();
       tool = next;
+      if (isInk(tool)) curves.sync(editor,mask);
       showSelection = false;
       controls();
       if (next === 'polygon') {
         closeMobilePalette();
         notify(tr('Tap vertices, then tap Finish or the first point.', 'Касайтесь вершин, затем нажмите «Готово» или первую точку.'));
       }
-      if (next === 'gradient' || next === 'wand') notify('');
+      if (next !== 'polygon') notify('');
       requestDraw();
     } catch (e) { failure(e); }
   }
   function point(event) { return editor.clientToCanvas(event.clientX, event.clientY); }
+  async function writeCurve(entries, finished) {
+    if (!entries || busy) return;
+    busy = true;
+    try {
+      await curves.commit(requireEditor(),entries,finished);
+      notify('');
+    } catch (e) { failure(e); }
+    finally { busy = false; controls(); requestDraw(); }
+  }
+  function finishPoints() {
+    if (tool === 'polygon') polygonDone();
+    if (tool === 'curve' && curves.count() && !busy) {
+      try {
+        requireEditor();
+        curves.sync(editor,mask);
+        void writeCurve(curves.finish(curveClip()),true);
+      } catch (e) { failure(e); }
+    }
+  }
+  function backPoint() {
+    if (busy) return;
+    if (tool === 'curve') curves.back(); else points.pop();
+    controls(); requestDraw();
+  }
   function inImage(p) { return p.x >= 0 && p.y >= 0 && p.x < editor.width && p.y < editor.height; }
   function polygonDone() {
     if (points.length < 3 || busy) return;
@@ -176,6 +209,7 @@ function installDrawingTools(surface, toolbar, config) {
       pointer = event.pointerId; pad.setPointerCapture(pointer);
       const p = point(event);
       closeMobilePalette();
+      if (isInk(tool)) { curves.sync(editor,mask); curves.down(tool,p,editor,event.shiftKey); }
       if (tool === 'gradient') drag = { start:p, end:p };
       hover = p;
       requestDraw();
@@ -183,9 +217,10 @@ function installDrawingTools(surface, toolbar, config) {
   }
   function move(event) {
     if (!tool || (pointer !== null && event.pointerId !== pointer)) return;
-    if (pointer === null && tool !== 'polygon') return;
+    if (pointer === null && tool !== 'polygon' && !isInk(tool)) return;
     if (!editor) return;
     hover = point(event);
+    if (isInk(tool)) curves.update(hover);
     if (drag) drag.end = hover;
     requestDraw();
   }
@@ -200,7 +235,9 @@ function installDrawingTools(surface, toolbar, config) {
         const first = points.length && editor.canvasToClient(points[0].x, points[0].y);
         if (points.length >= 3 && Math.hypot(first.x-event.clientX,first.y-event.clientY) <= 9) polygonDone();
         else if (!points.length || Math.hypot(p.x-points[points.length-1].x,p.y-points[points.length-1].y) > 0.001) points.push(p);
-      } else if (tool === 'wand' && inImage(p)) wandAt(p, mask);
+      } else if (tool === 'curve') curves.add(p);
+      else if (tool === 'pressure' || tool === 'edit') void writeCurve(curves.editResult(p),false);
+      else if (tool === 'wand' && inImage(p)) wandAt(p, mask);
       else if (tool === 'gradient' && drag) {
         const line = {start:drag.start,end:p};
         drag = null;
@@ -229,6 +266,12 @@ function installDrawingTools(surface, toolbar, config) {
     ctx.setTransform((right.x-origin.x)/editor.width,(right.y-origin.y)/editor.width,
       (bottom.x-origin.x)/editor.height,(bottom.y-origin.y)/editor.height,origin.x,origin.y);
     ctx.imageSmoothingEnabled = false;
+    if (isInk(tool)) {
+      if (!busy && curves.needsSync(editor)) {
+        try { requireEditor(); curves.sync(editor,mask); } catch (e) { ctx.restore(); failure(e); return; }
+      }
+      curves.draw(ctx,tool,hover,screen,tool==='curve' ? curveClip() : null);
+    }
     if (drag && Math.hypot(drag.end.x-drag.start.x,drag.end.y-drag.start.y) >= 0.1) {
       const preset = gradient();
       if (!gradientLayer || gradientLayer.width !== editor.width || gradientLayer.height !== editor.height) gradientLayer = drawingCanvas(editor.width,editor.height);
@@ -256,8 +299,9 @@ function installDrawingTools(surface, toolbar, config) {
     }
   }
   pad.onpointerdown = down; pad.onpointermove = move; pad.onpointerup = up;
-  pad.onpointercancel = () => { pointer = null; drag = null; hover = null; requestDraw(); };
-  pad.ondblclick = event => { event.preventDefault(); if (tool === 'polygon') polygonDone(); };
+  pad.onpointercancel = () => { pointer = null; drag = null; hover = null; curves.cancelDrag(); requestDraw(); };
+  pad.ondblclick = event => { event.preventDefault(); finishPoints(); };
+  pad.oncontextmenu = event => { if (tool==='curve') { event.preventDefault(); finishPoints(); } };
   for (const name of ['pointerdown','pointerup','mousedown','mousemove','mouseup','touchstart','touchmove','touchend','click','dblclick','contextmenu']) {
     host.addEventListener(name, e => e.stopPropagation());
   }
@@ -265,8 +309,16 @@ function installDrawingTools(surface, toolbar, config) {
     closeMobilePalette();
     pad.focus({preventScroll:true});
   };
-  finishBtn.onclick = polygonDone;
-  undoPt.onclick = () => { points.pop(); controls(); requestDraw(); };
+  finishBtn.onclick = finishPoints;
+  undoPt.onclick = backPoint;
+  q('[data-cancel-curve]').onclick = () => chooseTool('');
+  for (const [selector,direction] of [['[data-raise]',1],['[data-lower]',-1]]) {
+    q(selector).onclick = () => {
+      if (busy || tool!=='edit') return;
+      try { requireEditor(); curves.sync(editor,mask); void writeCurve(curves.reorder(direction),false); }
+      catch (e) { failure(e); }
+    };
+  }
   q('[data-tolerance]').oninput = () => { q('[data-tolerance-value]').textContent = q('[data-tolerance]').value; };
   q('[data-tolerance]').onchange = q('[data-contiguous]').onchange = q('[data-combine]').onchange = adjustWand;
   q('[data-erase]').onclick = () => void paint('erase');
@@ -279,11 +331,15 @@ function installDrawingTools(surface, toolbar, config) {
       el.isContentEditable || el.matches?.('input,select,textarea,dialog,a[href]') ||
       (event.key === 'Enter' && el.tagName === 'BUTTON'))) return;
     if (event.key === 'Escape') chooseTool('');
-    else if (event.key === 'Enter' && tool === 'polygon') polygonDone();
-    else if (event.key === 'Backspace' && tool === 'polygon') { points.pop(); controls(); requestDraw(); }
+    else if (event.key === 'Enter' && (tool === 'polygon' || tool==='curve')) finishPoints();
+    else if ((event.key === 'Backspace' && (tool==='polygon' || tool==='curve')) ||
+      (tool==='curve' && curves.count() && (event.ctrlKey || event.metaKey) && event.key.toLowerCase()==='z' && !event.shiftKey)) backPoint();
     else return;
     event.preventDefault(); event.stopImmediatePropagation();
   }, {capture:true, signal:lifecycle.signal});
+  for (const name of ['keyup','click']) document.addEventListener(name, () => {
+    if (isInk(tool)) requestDraw();
+  }, {capture:true,signal:lifecycle.signal});
   toolsContainer.addEventListener('click', event => {
     if (event.target.closest?.('.one_tool[data-tool]:not(.one_tool--disabled)') && (tool || showSelection)) chooseTool('');
   }, {capture:true, signal:lifecycle.signal});

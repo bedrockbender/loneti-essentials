@@ -123,7 +123,7 @@ const guard = setTimeout(() => {
   socket?.close();
   chromium.kill();
   server.close();
-}, 45_000);
+}, 90_000);
 
 try {
   const port = await browserPort();
@@ -157,6 +157,15 @@ try {
   await call('Page.enable');
   await call('Emulation.setDeviceMetricsOverride', {width: 1280, height: 1000, deviceScaleFactor: 1, mobile: false});
   for (const mode of fixtures.keys()) await testEditor(mode);
+  await call('Page.navigate', {url:new URL('../index.html',import.meta.url).href});
+  for (let i=0;i<100 && !await evaluate('document.querySelector("[data-language-options]")?.hidden===false');i++) await delay(40);
+  for (const [locale,resources] of [['ru-RU','values-ru'],['en-US','values']]) {
+    const warning = readFileSync(join(repo,'android/res',resources,'strings.xml'),'utf8').match(/name="link_warning">([^<]+)</)[1];
+    await evaluate(`document.querySelector('[data-language="${locale}"]').click()`);
+    assert.equal(await evaluate(`document.querySelector('.link-warning [data-locale="${locale}"]:not([hidden]) p').textContent`),warning);
+  }
+  assert.equal(await evaluate("document.querySelector('.link-warning button, .link-warning [role=button]')"),null);
+  console.log('PASS website warning permanently visible in the selected locale and matches both app translations');
 } finally {
   clearTimeout(guard);
   socket?.close();
@@ -222,10 +231,10 @@ async function testEditor(mode) {
     tool:button.dataset.leTool,title:button.title,label:button.getAttribute('aria-label'),
     pressed:button.getAttribute('aria-pressed'), icon:!!button.querySelector('svg[aria-hidden="true"]'),
   }))`);
-  assert.deepEqual(cards.map(card => card.tool).sort(), ['gradient', 'polygon', 'wand']);
+  assert.deepEqual(cards.map(card => card.tool).sort(), ['curve','edit','gradient','polygon','pressure','wand']);
   const localized = mode === 'avatar'
-    ? {polygon: /многоугольник/i, wand: /палочка/i, gradient: /градиент/i}
-    : {polygon: /polygon/i, wand: /magic wand/i, gradient: /gradient/i};
+    ? {polygon: /многоугольник/i, wand: /палочка/i, gradient: /градиент/i, curve:/кривая/i,pressure:/нажим/i,edit:/правка/i}
+    : {polygon: /polygon/i, wand: /magic wand/i, gradient: /gradient/i, curve:/curve/i,pressure:/pressure/i,edit:/edit/i};
   for (const card of cards) {
     assert.match(card.title, localized[card.tool], 'localized hover hint');
     assert.match(card.label, localized[card.tool], 'localized accessible name');
@@ -289,6 +298,78 @@ async function testEditor(mode) {
       input.value=${JSON.stringify(value)};
       input.dispatchEvent(new Event(${JSON.stringify(event)},{bubbles:true}));
     })()`);
+  }
+
+  if (mode === 'smile') await testAppearance();
+  const sampleCurve = '[pixel(85,100),pixel(85,105),pixel(85,130)]';
+  const clean = await evaluate(sampleCurve);
+  await choose('curve');
+  await set('[data-ink-color]','#ed1544');
+  await set('[data-ink-width]',8);
+  await set('[data-ink]',mode==='avatar' ? 'hand' : 'round');
+  await pointer(45,100); await pointer(85,100); await pointer(125,100);
+  assert.deepEqual(await evaluate(sampleCurve),clean,'curve remains a preview before finish');
+  await click('[data-finish]');
+  const ink = await evaluate(sampleCurve);
+  assert.deepEqual(ink[0],[237,21,68,255],mode+' committed curve center');
+  await choose('pressure');
+  await pointer(85,100,145,68);
+  const thick = await evaluate(sampleCurve);
+  assert.deepEqual(thick[1],ink[0],'pressure thickens the middle control point');
+  await choose('edit');
+  await pointer(85,100,85,130);
+  const moved = await evaluate(sampleCurve);
+  assert.deepEqual(moved[0],clean[0],'moving the point clears the old middle');
+  assert.deepEqual(moved[2],ink[0],'moving the point paints the new middle');
+  assert.equal(await evaluate('Boolean(historyState.abort(historyState.getStateAbort()))'),true);
+  assert.deepEqual(await evaluate(sampleCurve),thick,'native undo restores the pressure revision');
+  await choose('edit');
+  await set('[data-curve-action]','deleteStroke','change');
+  await pointer(85,100);
+  assert.deepEqual(await evaluate(sampleCurve),clean,'edit targets the restored curve after native undo');
+  await choose('curve'); await pointer(85,90); await click('[data-cancel-curve]');
+  assert.deepEqual(await evaluate(sampleCurve),clean,'cancel leaves layer pixels alone');
+  console.log('PASS '+mode+' curve, pressure, move, undo, delete and cancel');
+
+  if (mode==='smile' || mode==='room') {
+    await choose('curve');
+    await pointer(45,100); await pointer(125,100);
+    if (mode==='room') {
+      await evaluate('fixtureEngine().parent_context.is_connect_draw=false');
+      await click('[data-finish]');
+      await evaluate('fixtureEngine().parent_context.is_connect_draw=true');
+      assert.deepEqual(await evaluate(sampleCurve),clean,'disconnected room rejects curve without changing the layer');
+    }
+    await click('[data-finish]');
+    assert.deepEqual((await evaluate(sampleCurve))[0],ink[0],'retry paints the intended stroke');
+    await evaluate(`(() => {
+      const c=fixtureEditor().canvas.getContext('2d');
+      c.fillStyle='#143ad2'; c.fillRect(84,99,3,3);
+      fixtureEngine().users_canvas.getMyUser().events_draw.setDraw();
+    })()`);
+    await choose('edit');
+    await set('[data-curve-action]','deleteStroke','change');
+    await pointer(70,100);
+    assert.deepEqual(await evaluate('pixel(85,100)'),[20,58,210,255],'later native brush marks survive curve deletion');
+    assert.deepEqual(await evaluate('pixel(70,100)'),clean[0]);
+  }
+  if (mode==='smile') {
+    await choose('curve');
+    await pointer(45,150); await pointer(85,150); await pointer(125,150); await click('[data-finish]');
+    await set('[data-ink-color]','#2244ff');
+    await pointer(85,130); await pointer(85,175); await click('[data-finish]');
+    assert.deepEqual(await evaluate('pixel(85,150)'),[34,68,255,255],'new stroke is on top');
+    await choose('edit'); await set('[data-curve-action]','select','change');
+    await pointer(55,150); await click('[data-raise]');
+    assert.deepEqual(await evaluate('pixel(85,150)'),ink[0],'raising the selected stroke changes the crossing');
+    await click('[data-lower]');
+    assert.deepEqual(await evaluate('pixel(85,150)'),[34,68,255,255],'lowering restores stroke order');
+    await set('[data-curve-action]','split','change'); await pointer(85,150);
+    await set('[data-curve-action]','moveStroke','change'); await pointer(112,150,112,165);
+    assert.deepEqual(await evaluate('pixel(110,165)'),ink[0],'split halves move independently');
+    await set('[data-curve-action]','join','change'); await pointer(85,150); await pointer(85,165);
+    await set('[data-curve-action]','moveStroke','change'); await pointer(58,150,58,140);
+    assert.deepEqual(await evaluate('pixel(110,155)'),ink[0],'the joined endpoints move as one stroke');
   }
 
   if (mode === 'smile') {
@@ -422,4 +503,31 @@ async function testEditor(mode) {
   assert.deepEqual(await evaluate(pixelSamples), before, 'native undo restores pixels');
   console.log('PASS native ' + mode + ' editor toolbar, hints, native handoff, polygon, wand, masked gradient and undo');
   if (mode === 'smile') console.log('PASS gradient stop mouse, touch and keyboard movement, clamping and paint');
+}
+
+async function testAppearance() {
+  await evaluate(`(() => {
+    document.querySelector('a#cur_user')?.remove();
+    const root=document.createElement('section');root.id='appearanceFixture';
+    root.innerHTML='<a id="cur_user" href="/fixture-me"><img>Artist</a><div class="lcol_set"><div class="list_sets"></div></div>'+
+      '<div class="one_msg"><div class="ava_msg"><a href="/fixture-me"><img></a></div><div class="name_msg"><a href="/fixture-me">Artist</a></div>'+
+      '<div class="smile_msg"><img></div><button>Reply</button></div><div class="name_msg"><a href="/fixture-other">Artist</a></div>';
+    document.body.prepend(root);
+  })()`);
+  const checkbox = 'document.querySelector("#appearanceFixture .list_sets label input")';
+  assert.equal(await evaluate(checkbox+'.checked'),false);
+  await evaluate(checkbox+'.click()');
+  assert.deepEqual(await evaluate(`[...document.querySelectorAll('#appearanceFixture .name_msg a')].map(a=>a.getAttribute('data-le-alias'))`),['You',null]);
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#appearanceFixture .ava_msg img')).opacity`),'0');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#appearanceFixture .smile_msg img')).opacity`),'1');
+  await evaluate(`document.querySelector('#appearanceFixture').insertAdjacentHTML('beforeend','<div class="user_comment"><a href="/fixture-me">Artist</a></div>')`);
+  assert.equal(await evaluate(`document.querySelector('#appearanceFixture .user_comment a').getAttribute('data-le-alias')`),'You');
+  await evaluate(`document.querySelector('#cur_user').href='/fixture-other'`);
+  assert.equal(await evaluate(checkbox+'.checked'),false,'another profile starts with its own preference');
+  await evaluate(`document.querySelector('#cur_user').href='/fixture-me'`);
+  assert.equal(await evaluate(checkbox+'.checked'),true,'returning to the profile restores the checkbox');
+  await evaluate(checkbox+'.click()');
+  assert.equal(await evaluate(`document.querySelectorAll('#appearanceFixture [data-le-alias],#appearanceFixture [data-le-avatar]').length`),0);
+  await evaluate(`document.querySelector('#appearanceFixture').remove()`);
+  console.log('PASS local appearance settings, dynamic messages, profile switching and restore');
 }

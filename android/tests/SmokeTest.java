@@ -69,10 +69,13 @@ public final class SmokeTest extends Instrumentation {
             String output = shell("am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n " + launchName);
             require(output.contains("Status: ok") && !output.contains("Error:"), "Activity start failed: " + output.trim());
             awaitApp(target);
+            awaitText("Posting links on LONETI");
+            click("Got it");
             awaitText("Try again");
             click("Язык / Language");
             click("Русский");
             awaitText("Попробовать снова");
+            require(find("Ссылки на LONETI", 500) == null, "Dismissed warning returned after changing language");
             shell("am force-stop " + target);
             shell("am start -W -n " + launchName);
             awaitText("Попробовать снова");
@@ -85,6 +88,10 @@ public final class SmokeTest extends Instrumentation {
         int installedCode = context.getPackageManager().getPackageInfo(target, 0).versionCode;
         UpdateFixture.serve(installedCode + 1, "2.3.1");
         Activity activity = startActivitySync(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        awaitText("Posting links on LONETI");
+        click("Got it");
+        require(context.getSharedPreferences("app", Context.MODE_PRIVATE).getBoolean("linkWarningDismissed", false),
+                "Link warning dismissal did not persist");
         SmokeSite[] fixtureSite = new SmokeSite[1];
         WebView[] fixtureWeb = new WebView[1];
         runOnMainSync(() -> {
@@ -144,8 +151,8 @@ public final class SmokeTest extends Instrumentation {
                 + "&&document.querySelector('iframe')?.contentWindow.fixtureFrameClean===true"
                 + "&&document.querySelectorAll('.js--container-work-canvas [data-loneti-essentials=tools]').length===1"
                 + "&&document.querySelectorAll('#tools > .one_tool[data-tool]').length===4"
-                + "&&document.querySelectorAll('#tools button[data-le-tool]').length===3",
-                "one early drawing hook, three drawing tools in the native panel, one canvas overlay and no iframe hook");
+                + "&&document.querySelectorAll('#tools button[data-le-tool]').length===6",
+                "one early drawing hook, six drawing tools in the native panel, one canvas overlay and no iframe hook");
         dragGradientStop(fixtureWeb[0]);
         runOnMainSync(activity::onBackPressed);
         awaitText("Local LONETI smoke fixture");
@@ -236,6 +243,7 @@ public final class SmokeTest extends Instrumentation {
         updates.edit().clear().putLong("nextCheck", System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1)).commit();
         Activity activity = startActivitySync(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         WebView[] holder = new WebView[1];
+        tryClick("Понятно", 2500);
         runOnMainSync(() -> holder[0] = findWebView(activity.getWindow().getDecorView()));
         WebView web = holder[0];
         String footerLink = "document.querySelector('#footer a[href=\"loneti-essentials://language\"]')";

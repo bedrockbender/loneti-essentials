@@ -37,9 +37,34 @@ p{margin:5px 0}
 <section class="panel">
  <strong data-active></strong>
  <button type="button" data-use data-ru="Перейти к холсту">Return to canvas</button>
+ <div class="block" data-curve-options hidden>
+  <p data-ru="Ставьте точки касаниями. Нажмите «Готово» или дважды коснитесь последней точки.">Tap to place points. Choose Finish or double-click the last point.</p>
+  <label class="pair"><span data-ru="Тушь">Ink</span><select data-ink>
+   <option value="round" data-ru="Круглая тушь">Round ink</option><option value="hand" data-ru="Рукописная тушь">Hand ink</option></select></label>
+  <label class="pair"><span data-ru="Ширина, пикс.">Width (px)</span><input data-ink-width type="number" min="1" max="2000" value="6" style="width:6em"></label>
+  <label class="pair"><span data-ru="Цвет">Color</span><input data-ink-color type="color" value="#202020"></label>
+ </div>
+ <div class="block" data-pressure-options hidden><p data-ru="Перетащите точку кривой вправо или вверх, чтобы утолщить штрих, влево или вниз — чтобы сузить.">Drag a curve point right or up to thicken the stroke, left or down to thin it.</p><output data-pressure-value></output></div>
+ <div class="block" data-edit-options hidden>
+  <label class="pair"><span data-ru="Действие">Action</span><select data-curve-action>
+   <option value="move" data-ru="Переместить точку">Move point</option><option value="moveStroke" data-ru="Переместить кривую">Move stroke</option>
+   <option value="add" data-ru="Добавить точку">Add point</option><option value="deletePoint" data-ru="Удалить точку">Delete point</option>
+   <option value="deform" data-ru="Деформация">Deform near point</option><option value="duplicate" data-ru="Создать копию">Duplicate / move</option>
+   <option value="split" data-ru="Разделить кривую">Split stroke</option><option value="join" data-ru="Соединить концы">Join endpoints</option>
+   <option value="smooth" data-ru="Сгладить точки">Smooth points</option><option value="reduce" data-ru="Сократить число точек">Reduce points</option>
+   <option value="reverse" data-ru="Развернуть кривую">Reverse stroke</option><option value="select" data-ru="Выбрать кривые">Select strokes</option>
+   <option value="deleteStroke" data-ru="Удалить кривую">Delete stroke</option>
+  </select></label>
+  <label class="pair" data-deform hidden><span data-ru="Радиус, пикс.">Radius (px)</span><input type="number" data-deform-radius min="1" max="2000" value="80" style="width:6em"></label>
+  <div data-curve-order hidden><label><input type="checkbox" data-multi><span data-ru="Выбрать несколько">Select multiple</span></label>
+   <div class="row"><button type="button" data-raise data-ru="Выше">Raise</button><button type="button" data-lower data-ru="Ниже">Lower</button><output data-selected-count></output></div>
+  </div>
+  <p data-ru="Выберите действие и коснитесь точки или линии. Точки доступны, пока открыт этот редактор.">Choose an action, then touch a point or stroke. Points remain editable while this editor is open.</p>
+ </div>
  <div class="row" data-polygon-options hidden>
   <button type="button" hidden data-back data-ru="Шаг назад">Undo point</button>
   <button type="button" hidden data-finish data-ru="Готово">Finish</button>
+  <button type="button" hidden data-cancel-curve data-ru="Отмена">Cancel</button>
  </div>
   <label class="pair" data-combine-label><span data-ru="Выделение">Selection</span>
    <select data-combine>

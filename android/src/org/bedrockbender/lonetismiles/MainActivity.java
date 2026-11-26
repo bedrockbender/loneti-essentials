@@ -106,6 +106,15 @@ public final class MainActivity extends Activity {
         updateNotice = new UpdateNotice(this);
         root.addView(updateNotice, -1, -2);
         setContentView(root);
+        if (!getSharedPreferences("app", MODE_PRIVATE).getBoolean("linkWarningDismissed", false)) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.link_warning_title)
+                    .setMessage(R.string.link_warning)
+                    .setPositiveButton(R.string.dismiss_warning, null)
+                    .setOnDismissListener(dialog -> getSharedPreferences("app", MODE_PRIVATE)
+                            .edit().putBoolean("linkWarningDismissed", true).apply())
+                    .show();
+        }
 
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);

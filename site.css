@@ -177,6 +177,16 @@ a:hover { text-decoration-thickness: .12em; }
   padding-block-end: clamp(3rem, 8vw, 6rem);
 }
 
+.link-warning {
+  padding: .85rem 1.15rem;
+  border-inline-start: .25rem solid #edbd70;
+  border-radius: .25rem;
+  background: #2c261e;
+  color: #f4e6d2;
+}
+.link-warning strong { color: #ffd392; }
+.link-warning p { margin: .25rem 0 0; }
+
 .setup-panel {
   min-inline-size: 0;
   scroll-margin-block-start: 1rem;

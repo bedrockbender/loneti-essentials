@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         Loneti essentials
 // @namespace    loneti-smile-collector
-// @version      3.2.0
+// @version      3.3.0
 // @homepageURL  https://bedrockbender.github.io/loneti-essentials/
 // @downloadURL  https://bedrockbender.github.io/loneti-essentials/loneti-smile-collector.user.js
 // @updateURL    https://bedrockbender.github.io/loneti-essentials/loneti-smile-collector.user.js
 // @icon         https://bedrockbender.github.io/loneti-essentials/icon.svg
 // @supportURL   https://github.com/bedrockbender/loneti-essentials/issues
 // @license      MIT
-// @description  Draw with polygon and color selections and custom gradients. Collect Smiles and share named packs.
-// @description:ru Собирайте смайлы и делитесь наборами. Рисуйте с помощью выделения по многоугольнику и цвету и собственных градиентов.
+// @description  Draw and edit ink curves, adjust point pressure, use selections and gradients, and share Smile packs.
+// @description:ru Рисуйте тушью, меняйте форму и нажим кривых, используйте выделения и градиенты. Собирайте смайлы и делитесь наборами.
 // @match        https://loneti.art/*
 // @match        https://loneti.ru/*
 // @grant        none
@@ -388,6 +388,14 @@ function getNativeEditor() {
 
   return {
     canvas, layerKey: canvas, surface, mode, width, height,
+    historyKey: () => history.getCurrentState(),
+    curveRevision(versions) {
+      for (let i = history.current_index; i >= 0; i--) {
+        const revision = versions.get(history.states[i]);
+        if (revision?.layer === canvas && revision.base.width === width && revision.base.height === height) return revision;
+      }
+      return null;
+    },
     clientToCanvas(clientX, clientY) {
       const rect = surface.getBoundingClientRect();
       return engine.transform_canvas.transform.getInverted().getTransformedPoint({
@@ -476,6 +484,7 @@ function getNativeEditor() {
       if (room) nativeEditorPublishHistory(engine, user, history);
       // Native Save can open its preview before the next animation frame.
       engine.art_canvas.renderLayers();
+      return history.getCurrentState();
     },
     setSelection(mask, maskWidth = width, maskHeight = height) {
       const room = ensureEdit();
@@ -760,9 +769,34 @@ p{margin:5px 0}
 <section class="panel">
  <strong data-active></strong>
  <button type="button" data-use data-ru="Перейти к холсту">Return to canvas</button>
+ <div class="block" data-curve-options hidden>
+  <p data-ru="Ставьте точки касаниями. Нажмите «Готово» или дважды коснитесь последней точки.">Tap to place points. Choose Finish or double-click the last point.</p>
+  <label class="pair"><span data-ru="Тушь">Ink</span><select data-ink>
+   <option value="round" data-ru="Круглая тушь">Round ink</option><option value="hand" data-ru="Рукописная тушь">Hand ink</option></select></label>
+  <label class="pair"><span data-ru="Ширина, пикс.">Width (px)</span><input data-ink-width type="number" min="1" max="2000" value="6" style="width:6em"></label>
+  <label class="pair"><span data-ru="Цвет">Color</span><input data-ink-color type="color" value="#202020"></label>
+ </div>
+ <div class="block" data-pressure-options hidden><p data-ru="Перетащите точку кривой вправо или вверх, чтобы утолщить штрих, влево или вниз — чтобы сузить.">Drag a curve point right or up to thicken the stroke, left or down to thin it.</p><output data-pressure-value></output></div>
+ <div class="block" data-edit-options hidden>
+  <label class="pair"><span data-ru="Действие">Action</span><select data-curve-action>
+   <option value="move" data-ru="Переместить точку">Move point</option><option value="moveStroke" data-ru="Переместить кривую">Move stroke</option>
+   <option value="add" data-ru="Добавить точку">Add point</option><option value="deletePoint" data-ru="Удалить точку">Delete point</option>
+   <option value="deform" data-ru="Деформация">Deform near point</option><option value="duplicate" data-ru="Создать копию">Duplicate / move</option>
+   <option value="split" data-ru="Разделить кривую">Split stroke</option><option value="join" data-ru="Соединить концы">Join endpoints</option>
+   <option value="smooth" data-ru="Сгладить точки">Smooth points</option><option value="reduce" data-ru="Сократить число точек">Reduce points</option>
+   <option value="reverse" data-ru="Развернуть кривую">Reverse stroke</option><option value="select" data-ru="Выбрать кривые">Select strokes</option>
+   <option value="deleteStroke" data-ru="Удалить кривую">Delete stroke</option>
+  </select></label>
+  <label class="pair" data-deform hidden><span data-ru="Радиус, пикс.">Radius (px)</span><input type="number" data-deform-radius min="1" max="2000" value="80" style="width:6em"></label>
+  <div data-curve-order hidden><label><input type="checkbox" data-multi><span data-ru="Выбрать несколько">Select multiple</span></label>
+   <div class="row"><button type="button" data-raise data-ru="Выше">Raise</button><button type="button" data-lower data-ru="Ниже">Lower</button><output data-selected-count></output></div>
+  </div>
+  <p data-ru="Выберите действие и коснитесь точки или линии. Точки доступны, пока открыт этот редактор.">Choose an action, then touch a point or stroke. Points remain editable while this editor is open.</p>
+ </div>
  <div class="row" data-polygon-options hidden>
   <button type="button" hidden data-back data-ru="Шаг назад">Undo point</button>
   <button type="button" hidden data-finish data-ru="Готово">Finish</button>
+  <button type="button" hidden data-cancel-curve data-ru="Отмена">Cancel</button>
  </div>
   <label class="pair" data-combine-label><span data-ru="Выделение">Selection</span>
    <select data-combine>
@@ -796,6 +830,9 @@ p{margin:5px 0}
 `;
 
 const toolIcons = {
+  curve: '<path d="M3 18C7 18 6 5 12 6s3 14 9 7"/><g fill="white"><circle cx="3" cy="18" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="21" cy="13" r="2"/></g>',
+  pressure: '<path d="M2 18Q12 17 21 4Q17 18 2 20Z" fill="currentColor"/><path d="m5 11 5-6m-4 0h4v4"/>',
+  edit: '<path d="M2 17Q7 3 18 7"/><rect x="2" y="14" width="4" height="4" fill="white"/><path d="m11 9 9 6-4 1 2 5-3 1-2-6-3 3Z" fill="white"/>',
   polygon: '<path d="m4 17 4-13 13 6-4 10Z" stroke-dasharray="2 2"/><g fill="white"><path d="M2.5 15.5h3v3h-3zM6.5 2.5h3v3h-3zM19.5 8.5h3v3h-3zM15.5 18.5h3v3h-3z"/></g>',
   wand: '<path d="m3 19 11-11 2.6 2.6-11 11z" fill="currentColor"/><path d="m12.7 12.5 2.5 2.5" stroke="white"/><path d="m9 3 .6 1.8L11.5 5l-1.9.6L9 7.5l-.6-1.9L6.5 5l1.9-.2ZM18 2l.7 2.3L21 5l-2.3.7L18 8l-.7-2.3L15 5l2.3-.7ZM20 12v4m-2-2h4" stroke-width="1.2"/>',
   gradient: '<defs><linearGradient id="le-tool-ramp" x2="1" y2=".4" gradientUnits="objectBoundingBox"><stop stop-color="#303030"/><stop offset="1" stop-color="white"/></linearGradient></defs><rect x="2" y="4.5" width="20" height="15" rx="1.5" fill="url(#le-tool-ramp)"/>',
@@ -803,6 +840,9 @@ const toolIcons = {
 
 function createToolButtons(toolbar, tr, chooseTool) {
   const items = [
+    ['curve', tr('Curve','Кривая'), tr('Place points to draw an ink stroke.','Расставьте точки кривой.'), 'brush'],
+    ['pressure', tr('Pressure','Нажим'), tr('Drag a curve point to change its width.','Потяните точку кривой, чтобы изменить нажим.'), 'curve'],
+    ['edit', tr('Edit','Правка'), tr('Reshape curve points and strokes.','Изменяйте точки и форму кривых.'), 'pressure'],
     ['polygon', tr('Polygon','Многоугольник'), tr('Click to place vertices. Click the first vertex to finish.','Ставьте вершины щелчком. Нажмите на первую, чтобы замкнуть контур.'), 'lasso'],
     ['wand', tr('Magic wand','Волшебная палочка'), tr('Select pixels of a similar color.','Нажмите на цвет, чтобы выделить похожие пиксели.'), 'polygon'],
     ['gradient', tr('Gradient','Градиент'), tr('Drag to blend colors across the layer or selection.','Проведите линию, чтобы растянуть цвета по слою или выделению.'), 'fillbrush'],
@@ -1043,6 +1083,378 @@ function gradientEditor(container, tr, notify, signal) {
   return () => ({type, stops:sort()});
 }
 
+// Linework's bounded Hermite centerline, pressure interpolation and solid ink profiles.
+const curveDistance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+const curveClamp = (v, min, max) => Math.min(max, Math.max(min, v));
+const curveGeometry = new WeakMap();
+
+function inkNoise(distance, seed) {
+  function at(cell) {
+    let n = (cell + seed + 0x9e3779b9) | 0;
+    n = Math.imul(n ^ (n >>> 16), 0x85ebca6b);
+    n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35);
+    return ((n ^ (n >>> 16)) >>> 0) / 0xffffffff * 2 - 1;
+  }
+  const cell = Math.floor(distance), t = distance - cell;
+  return at(cell) + (at(cell + 1) - at(cell)) * t * t * (3 - 2 * t);
+}
+
+function inkGeometry(stroke) {
+  if (curveGeometry.has(stroke)) return curveGeometry.get(stroke);
+  const {points, width, preset} = stroke;
+  const samples = [{...points[0], distance:0, segment:0}];
+  function tangent(a, b, c, key) {
+    const left = curveDistance(a,b), right = curveDistance(b,c);
+    if (Math.min(left,right) < .0001) return (c[key]-a[key]) / 2;
+    return ((b[key]-a[key])/left + (c[key]-b[key])/right) * Math.min(left,right) / 2;
+  }
+  const slope = (a,b) => (b.pressure-a.pressure) / Math.max(.001,curveDistance(a,b));
+  const blend = (a,b) => a*b <= 0 ? 0 : 2*a*b/(a+b);
+  for (let i = 0; i + 1 < points.length; i++) {
+    const b = points[i], c = points[i+1], a = points[i-1] || b, d = points[i+2] || c;
+    const span = curveDistance(b,c), rate = slope(b,c);
+    const steps = curveClamp(Math.ceil(span/.75), 8, 2048);
+    const start = {x:tangent(a,b,c,'x'), y:tangent(a,b,c,'y'), pressure:span*(a===b ? rate : blend(slope(a,b),rate))};
+    const end = {x:tangent(b,c,d,'x'), y:tangent(b,c,d,'y'), pressure:span*(c===d ? rate : blend(rate,slope(c,d)))};
+    for (let n = 1; n <= steps; n++) {
+      const t = n/steps, t2 = t*t, t3 = t2*t;
+      const hermite = key => (2*t3-3*t2+1)*b[key] + (t3-2*t2+t)*start[key]
+        + (3*t2-2*t3)*c[key] + (t3-t2)*end[key];
+      const p = {x:hermite('x'), y:hermite('y'), pressure:hermite('pressure'), segment:i};
+      const last = samples[samples.length-1], length = curveDistance(last,p);
+      if (length < .0001) { last.pressure = p.pressure; continue; }
+      p.distance = last.distance + length;
+      samples.push(p);
+    }
+  }
+  const hand = preset === 'hand', scale = curveClamp(width*1.6,9,60);
+  const total = samples[samples.length-1].distance;
+  const path = new Path2D(), right = [];
+  for (let i = 0; i < samples.length; i++) {
+    const p = samples[i], dist = p.distance;
+    const variation = hand ? 1 + .25*inkNoise(dist/scale,71) + .055*inkNoise(dist/(scale*.35),179) : 1;
+    const radius = width * Math.max(0,p.pressure) * variation / 2;
+    if (samples.length === 1) { path.arc(p.x,p.y,radius,0,2*Math.PI); break; }
+    const before = samples[i-1] || p, after = samples[i+1] || p;
+    const angle = Math.atan2(after.y-before.y, after.x-before.x) + Math.PI/2;
+    const dx = Math.cos(angle), dy = Math.sin(angle);
+    const fade = Math.min(1,dist/(width*2))*Math.min(1,(total-dist)/(width*2));
+    const drift = hand ? radius*fade*.055*inkNoise(dist/curveClamp(width*1.2,8,45),137) : 0;
+    const x = p.x+dx*(radius+drift), y = p.y+dy*(radius+drift);
+    if (!i) path.moveTo(x,y); else path.lineTo(x,y);
+    right.push({x:p.x-dx*(radius-drift), y:p.y-dy*(radius-drift)});
+    if (i === samples.length-1) {
+      path.arc(p.x,p.y,radius,angle,angle-Math.PI,true);
+      for (let j=right.length-1; j>=0; j--) path.lineTo(right[j].x,right[j].y);
+      const first = samples[0], next = samples[1];
+      const back = Math.atan2(next.y-first.y,next.x-first.x)-Math.PI/2;
+      const firstRadius = curveDistance(first,right[0]);
+      path.arc(first.x,first.y,firstRadius,back,back-Math.PI,true);
+    }
+  }
+  path.closePath();
+  const geometry = {path,samples};
+  curveGeometry.set(stroke,geometry);
+  return geometry;
+}
+
+function curveHit(entries, pos, radius, segments, eligible) {
+  let best = null, limit = radius;
+  for (let i = entries.length-1; i >= 0; i--) {
+    const stroke = entries[i];
+    if (!stroke.points || !eligible(stroke)) continue;
+    const list = segments ? inkGeometry(stroke).samples : stroke.points;
+    for (let j = segments && list.length > 1 ? 1 : 0; j < list.length; j++) {
+      const b = list[j], a = segments && j ? list[j-1] : b;
+      const x = b.x-a.x, y = b.y-a.y, len = x*x+y*y;
+      const t = len ? curveClamp(((pos.x-a.x)*x+(pos.y-a.y)*y)/len,0,1) : 0;
+      const point = {x:a.x+t*x,y:a.y+t*y,pressure:a.pressure+t*(b.pressure-a.pressure)};
+      const dist = curveDistance(point,pos);
+      if (dist < limit) { best = {i, j:segments ? b.segment : j, point}; limit = dist; }
+    }
+  }
+  return best;
+}
+
+// Keep control points with their native history revisions for the lifetime of this editor.
+// The site saves regular pixels. Intervening raster marks replay in their original paint order.
+function curveLayers() {
+  const layers = new WeakMap();
+  let cachedRevision, cachedPixels;
+  const words = image => new Uint32Array(image.data.buffer, image.data.byteOffset, image.data.length/4);
+  function rasterChanges(old, current) {
+    const a = words(old), b = words(current), runs = [];
+    for (let i=0; i<b.length;) {
+      if (a[i] === b[i]) { i++; continue; }
+      const start = i++;
+      while (i<b.length && a[i] !== b[i]) i++;
+      runs.push({start, values:b.slice(start,i)});
+    }
+    return runs;
+  }
+  function flatten(revision) {
+    if (revision === cachedRevision) return cachedPixels;
+    const {base,entries} = revision;
+    const canvas = drawingCanvas(base.width,base.height);
+    const ctx = canvas.getContext('2d',{willReadFrequently:true});
+    ctx.putImageData(base,0,0);
+    let clipCanvas;
+    for (const entry of entries) {
+      if (entry.runs) {
+        const raster = ctx.getImageData(0,0,base.width,base.height), pixels = words(raster);
+        for (const run of entry.runs) pixels.set(run.values,run.start);
+        ctx.putImageData(raster,0,0);
+      } else if (entry.clip) {
+        clipCanvas ||= drawingCanvas(base.width,base.height);
+        const ink = clipCanvas.getContext('2d');
+        ink.clearRect(0,0,base.width,base.height);
+        ink.fillStyle = entry.color;
+        ink.fill(inkGeometry(entry).path);
+        ink.globalCompositeOperation = 'destination-in';
+        ink.drawImage(entry.clip,0,0);
+        ink.globalCompositeOperation = 'source-over';
+        ctx.drawImage(clipCanvas,0,0);
+      } else {
+        ctx.fillStyle = entry.color;
+        ctx.fill(inkGeometry(entry).path);
+      }
+    }
+    cachedRevision = revision;
+    cachedPixels = ctx.getImageData(0,0,base.width,base.height);
+    return cachedPixels;
+  }
+  function read(edit) {
+    const current = edit.readLayer(), key = edit.historyKey();
+    if (!layers.has(edit.layerKey)) layers.set(edit.layerKey,{versions:new WeakMap()});
+    const layer = layers.get(edit.layerKey);
+    let revision = edit.curveRevision(layer.versions) || (!key && layer.initial);
+    if (revision && (revision.base.width !== edit.width || revision.base.height !== edit.height)) revision = null;
+    if (!revision) revision = {layer:edit.layerKey,base:current,entries:[]};
+    else {
+      const runs = rasterChanges(flatten(revision), current);
+      if (runs.length) revision = {...revision, entries:[...revision.entries,{runs}]};
+    }
+    if (key) layer.versions.set(key,revision); else layer.initial = revision;
+    cachedRevision = revision;
+    cachedPixels = current;
+    return revision;
+  }
+  async function write(edit, previous, entries) {
+    // A lock, Undo, layer switch or another stroke can occur during a drag.
+    if (read(edit) !== previous) throw editorFailure('layerChanged');
+    const next = {...previous,entries};
+    const key = await edit.commitLayer(flatten(next));
+    layers.get(edit.layerKey).versions.set(key,next);
+    return next;
+  }
+  return {read,write};
+}
+
+function createCurveTools(q, tr, notify, redraw) {
+  const layers = curveLayers();
+  let revision, historyKey, draft = [], gesture, join, preview, selection, previewCanvas;
+  const selected = new Set();
+  const action = () => q('[data-curve-action]').value;
+  function selectionControls() {
+    q('[data-raise]').disabled = q('[data-lower]').disabled = !selected.size;
+    q('[data-selected-count]').textContent = tr('Selected','Выбрано')+' · '+selected.size;
+  }
+  function reset() {
+    draft = []; gesture = join = preview = revision = null;
+    selected.clear(); selectionControls();
+    q('[data-pressure-value]').textContent = '';
+  }
+  function sync(edit, mask) {
+    const next = layers.read(edit);
+    if (revision !== next) {
+      join = gesture = preview = null;
+      for (const item of selected) if (!next.entries.includes(item)) selected.delete(item);
+      selectionControls();
+    }
+    revision = next;
+    historyKey = edit.historyKey();
+    selection = mask;
+  }
+  function eligible(stroke) {
+    return !selection || stroke.mask === selection || (stroke.mask &&
+      selection.length === stroke.mask.length && selection.every((v,i) => v === stroke.mask[i]));
+  }
+  function stroke(points, clip = null) {
+    return {points, clip, mask:selection, color:q('[data-ink-color]').value,
+      width:curveClamp(Number(q('[data-ink-width]').value) || 1,1,2000), preset:q('[data-ink]').value};
+  }
+  function add(p) {
+    if (!draft.length || curveDistance(draft[draft.length-1],p) > .01) draft.push({...p,pressure:1});
+  }
+  function down(tool, p, edit, shiftKey) {
+    if (tool === 'curve') return;
+    const mode = tool === 'pressure' ? 'pressure' : action();
+    const a = edit.canvasToClient(0,0), b = edit.canvasToClient(1,0), zoom = Math.max(.01,curveDistance(a,b));
+    const hit = segments => curveHit(revision.entries,p,(segments ? 20 : 12)/zoom,segments,eligible);
+    const byPoint = ['pressure','move','deform','deletePoint','split','join'].includes(mode);
+    let target = hit(!byPoint), insert = false;
+    if (mode === 'select') {
+      const additive = shiftKey || q('[data-multi]').checked;
+      if (!additive) selected.clear();
+      if (target) {
+        const item = revision.entries[target.i];
+        if (additive && selected.has(item)) selected.delete(item); else selected.add(item);
+      }
+      selectionControls(); redraw(); return;
+    }
+    if (!target && mode === 'move') { target = hit(true); insert = !!target; }
+    if (!target) { notify(tr('Choose a Curve stroke on this layer. Clear the selection to edit across it.',
+      'Выберите кривую на этом слое. Снимите выделение, чтобы редактировать кривые за его пределами.')); return; }
+    const original = revision.entries[target.i];
+    const points = [...original.points];
+    let j = target.j;
+    if (insert || mode === 'add') points.splice(++j,0,target.point);
+    gesture = {mode, i:target.i, j, start:p, original, points, insert};
+    update(p);
+  }
+  function update(p) {
+    if (!gesture) return;
+    const {mode, original, points, start, j} = gesture;
+    const dx = p.x-start.x, dy = p.y-start.y;
+    let changed = points;
+    if (mode === 'pressure') {
+      const pressure = curveClamp(points[j].pressure+(dx-dy)*.01,0,4);
+      changed = points.map((v,i) => i===j ? {...v,pressure} : v);
+      q('[data-pressure-value]').textContent = Math.round(pressure*100)+'%';
+    } else if (['move','moveStroke','duplicate','deform'].includes(mode)) {
+      const distance = points.map(() => 0);
+      if (mode === 'deform') {
+        for (let i=j-1;i>=0;i--) distance[i]=distance[i+1]+curveDistance(points[i+1],points[i]);
+        for (let i=j+1;i<points.length;i++) distance[i]=distance[i-1]+curveDistance(points[i-1],points[i]);
+      }
+      const radius = Math.max(1, Number(q('[data-deform-radius]').value));
+      changed = points.map((v,i) => {
+        const t = Math.max(0,1-distance[i]/radius);
+        const weight = mode === 'move' ? Number(i===j) : t*t*(3-2*t);
+        return {...v,x:v.x+dx*weight,y:v.y+dy*weight};
+      });
+    }
+    preview = {...original,points:changed};
+  }
+  function editResult(p) {
+    if (!gesture) return;
+    update(p);
+    const {i,j,mode,original,points,start,insert} = gesture, changed = preview;
+    gesture = preview = null;
+    const entries = [...revision.entries];
+    const replace = (...strokes) => entries.splice(i,1,...strokes);
+    if (mode === 'join') {
+      if (j !== 0 && j !== points.length-1) {
+        notify(tr('Tap an endpoint to join curves.', 'Для соединения нажмите на конец кривой.')); return;
+      }
+      if (!join) { join = {i,j}; redraw(); notify(tr('Choose the other endpoint.', 'Выберите второй конец.')); return; }
+      const first = entries[join.i], firstIndex = join.i, firstPoint = join.j;
+      join = null;
+      if (first === original || first.color !== original.color || first.width !== original.width ||
+          first.preset !== original.preset || first.mask !== original.mask) {
+        notify(tr('Choose two curves with the same ink, color, width and selection.',
+          'Выберите две кривые с одинаковыми тушью, цветом, шириной и выделением.')); return;
+      }
+      const joined = [...(firstPoint===0 ? [...first.points].reverse() : first.points),
+        ...(j===0 ? points : [...points].reverse())];
+      entries.splice(Math.max(firstIndex,i),1);
+      entries.splice(Math.min(firstIndex,i),1,{...first,points:joined});
+    } else if (mode === 'deleteStroke') replace();
+    else if (mode === 'deletePoint') {
+      const rest = points.filter((_,n) => n!==j);
+      replace(...(rest.length ? [{...original,points:rest}] : []));
+    } else if (mode === 'split') {
+      if (j===0 || j===points.length-1) return;
+      replace({...original,points:points.slice(0,j+1)}, {...original,points:points.slice(j)});
+    } else if (mode === 'reverse') replace({...original,points:points.reverse()});
+    else if (mode === 'smooth') {
+      if (points.length<3) return;
+      replace({...original,points:points.map((v,n) => n && n < points.length-1 ?
+        {...v,x:(points[n-1].x+2*v.x+points[n+1].x)/4,y:(points[n-1].y+2*v.y+points[n+1].y)/4} : v)});
+    } else if (mode === 'reduce') {
+      const kept = [points[0]];
+      for (let n=1;n<points.length-1;n++) {
+        const a=kept[kept.length-1], b=points[n+1], v=points[n];
+        const span=curveDistance(a,b), t=span ? curveClamp(((v.x-a.x)*(b.x-a.x)+(v.y-a.y)*(b.y-a.y))/(span*span),0,1) : 0;
+        if (Math.hypot(v.x-a.x-t*(b.x-a.x),v.y-a.y-t*(b.y-a.y))>.65 ||
+            Math.abs(v.pressure-a.pressure-t*(b.pressure-a.pressure))>.02) kept.push(v);
+      }
+      if (points.length<=2 || kept.length+1===points.length) return;
+      replace({...original,points:[...kept,points[points.length-1]]});
+    } else if (mode === 'duplicate') entries.splice(i+1,0,changed);
+    else {
+      if (!insert && mode!=='add' && curveDistance(start,p)<.001) return;
+      replace(changed);
+    }
+    return entries;
+  }
+  function reorder(direction) {
+    if (!selected.size) return;
+    const entries = [...revision.entries];
+    let moved = false;
+    for (let n=0; n<entries.length-1; n++) {
+      const i = direction>0 ? entries.length-2-n : 1+n, other = i+direction;
+      if (selected.has(entries[i]) && eligible(entries[i]) && entries[other].points &&
+          eligible(entries[other]) && !selected.has(entries[other])) {
+        [entries[i],entries[other]] = [entries[other],entries[i]];
+        moved = true;
+      }
+    }
+    if (moved) return entries;
+  }
+  function draw(ctx, tool, hover, screen, clip) {
+    if (!revision) return;
+    const shown = tool==='curve' ? draft : null;
+    const moving = shown?.length ? stroke(hover && curveDistance(shown[shown.length-1],hover)>.01 ?
+      [...shown,{...hover,pressure:1}] : shown,clip) : preview;
+    if (moving) {
+      ctx.save();
+      if (moving.clip) {
+        if (!previewCanvas || previewCanvas.width!==moving.clip.width || previewCanvas.height!==moving.clip.height) {
+          previewCanvas = drawingCanvas(moving.clip.width,moving.clip.height);
+        }
+        const ink = previewCanvas.getContext('2d');
+        ink.globalCompositeOperation='source-over'; ink.clearRect(0,0,previewCanvas.width,previewCanvas.height);
+        ink.fillStyle=moving.color; ink.fill(inkGeometry(moving).path);
+        ink.globalCompositeOperation='destination-in'; ink.drawImage(moving.clip,0,0);
+        ctx.drawImage(previewCanvas,0,0);
+      } else { ctx.fillStyle=moving.color; ctx.fill(inkGeometry(moving).path); }
+      ctx.restore();
+    }
+    ctx.save(); ctx.resetTransform();
+    const handles = (points,active) => points.forEach((p,j) => {
+      const {x,y}=screen(p);
+      const highlighted = active===j || active==='all';
+      ctx.beginPath(); ctx.arc(x,y,highlighted ? 5 : 3.5,0,Math.PI*2);
+      ctx.fillStyle=highlighted ? '#ffbe54' : 'white'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle='#205854'; ctx.stroke();
+    });
+    if (shown) handles(shown,-1);
+    else revision.entries.forEach((s,i) => {
+      if (s.points && eligible(s)) handles(gesture?.i===i ? preview.points : s.points,
+        gesture?.i===i ? gesture.j : join?.i===i ? join.j : selected.has(s) ? 'all' : -1);
+    });
+    ctx.restore();
+  }
+  q('[data-curve-action]').onchange = () => {
+    gesture = preview = join = null;
+    selected.clear(); selectionControls();
+    q('[data-curve-order]').hidden = action() !== 'select';
+    q('[data-deform]').hidden = action() !== 'deform'; redraw();
+  };
+  for (const name of ['ink','ink-width','ink-color']) q('[data-'+name+']').oninput = redraw;
+  return {reset, sync, down, update, add, editResult, draw, reorder,
+    needsSync: edit => edit.historyKey() !== historyKey || edit.layerKey !== revision?.layer,
+    count: () => draft.length, back: () => draft.pop(),
+    cancelDrag() { gesture = preview = null; },
+    finish: clip => draft.length && [...revision.entries,stroke(draft,clip)],
+    async commit(edit, entries, finished) {
+      const next = await layers.write(edit,revision,entries);
+      revision = next; historyKey = edit.historyKey();
+      if (finished) draft = [];
+    }};
+}
+
 function installDrawingTools(surface, toolbar, config) {
   const ru = (document.documentElement.lang || (location.hostname.endsWith('.ru') ? 'ru' : 'en')).toLowerCase().startsWith('ru');
   const tr = (en, russian) => ru ? russian : en;
@@ -1083,6 +1495,12 @@ function installDrawingTools(surface, toolbar, config) {
   }
   const lifecycle = new AbortController();
   const gradient = gradientEditor(q('[data-gradient-options]'), tr, notify, lifecycle.signal);
+  const curves = createCurveTools(q,tr,notify,requestDraw);
+  const isInk = name => ['curve','pressure','edit'].includes(name);
+  function curveClip() {
+    if (mask) stencil ||= maskTexture(mask,editor.width,editor.height,false);
+    return mask ? stencil : null;
+  }
   function failure(error) {
     const messages = {
       layerUnavailable: tr('Select one of your visible, unlocked layers.', 'Выберите свой видимый незаблокированный слой.'),
@@ -1130,15 +1548,17 @@ function installDrawingTools(surface, toolbar, config) {
     if (!ok) notify(tr('This selection applies to Gradient, Fill selection and Erase selection.', 'Это выделение действует для градиента, заливки и стирания выделенной области.'));
     requestDraw();
   }
-  function resetGesture() { points = []; hover = null; drag = null; pointer = null; wandBase = null; }
+  function resetGesture() { points = []; hover = null; drag = null; pointer = null; wandBase = null; curves.reset(); }
   function controls() {
     options.hidden = !tool && !(showSelection && mask);
     toolsContainer.toggleAttribute('data-le-custom-active', !!tool);
     config.toggleAttribute('data-le-custom-active', !!tool);
     q('[data-active]').textContent = labels[tool] || tr('Selection','Выделение');
-    q('[data-polygon-options]').hidden = finishBtn.hidden = undoPt.hidden = tool !== 'polygon';
-    finishBtn.disabled = points.length < 3;
-    undoPt.disabled = !points.length;
+    q('[data-polygon-options]').hidden = finishBtn.hidden = undoPt.hidden = tool !== 'polygon' && tool !== 'curve';
+    finishBtn.disabled = busy || (tool === 'curve' ? !curves.count() : points.length < 3);
+    undoPt.disabled = busy || (tool === 'curve' ? !curves.count() : !points.length);
+    q('[data-cancel-curve]').hidden = tool !== 'curve' || !curves.count() || busy;
+    for (const name of ['curve','pressure','edit']) q('[data-'+name+'-options]').hidden = tool !== name;
     pad.style.pointerEvents = tool ? 'auto' : 'none';
     pad.style.cursor = tool ? 'crosshair' : '';
     for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.leTool === tool));
@@ -1165,17 +1585,42 @@ function installDrawingTools(surface, toolbar, config) {
       requireEditor();
       if (tool !== next) resetGesture();
       tool = next;
+      if (isInk(tool)) curves.sync(editor,mask);
       showSelection = false;
       controls();
       if (next === 'polygon') {
         closeMobilePalette();
         notify(tr('Tap vertices, then tap Finish or the first point.', 'Касайтесь вершин, затем нажмите «Готово» или первую точку.'));
       }
-      if (next === 'gradient' || next === 'wand') notify('');
+      if (next !== 'polygon') notify('');
       requestDraw();
     } catch (e) { failure(e); }
   }
   function point(event) { return editor.clientToCanvas(event.clientX, event.clientY); }
+  async function writeCurve(entries, finished) {
+    if (!entries || busy) return;
+    busy = true;
+    try {
+      await curves.commit(requireEditor(),entries,finished);
+      notify('');
+    } catch (e) { failure(e); }
+    finally { busy = false; controls(); requestDraw(); }
+  }
+  function finishPoints() {
+    if (tool === 'polygon') polygonDone();
+    if (tool === 'curve' && curves.count() && !busy) {
+      try {
+        requireEditor();
+        curves.sync(editor,mask);
+        void writeCurve(curves.finish(curveClip()),true);
+      } catch (e) { failure(e); }
+    }
+  }
+  function backPoint() {
+    if (busy) return;
+    if (tool === 'curve') curves.back(); else points.pop();
+    controls(); requestDraw();
+  }
   function inImage(p) { return p.x >= 0 && p.y >= 0 && p.x < editor.width && p.y < editor.height; }
   function polygonDone() {
     if (points.length < 3 || busy) return;
@@ -1221,6 +1666,7 @@ function installDrawingTools(surface, toolbar, config) {
       pointer = event.pointerId; pad.setPointerCapture(pointer);
       const p = point(event);
       closeMobilePalette();
+      if (isInk(tool)) { curves.sync(editor,mask); curves.down(tool,p,editor,event.shiftKey); }
       if (tool === 'gradient') drag = { start:p, end:p };
       hover = p;
       requestDraw();
@@ -1228,9 +1674,10 @@ function installDrawingTools(surface, toolbar, config) {
   }
   function move(event) {
     if (!tool || (pointer !== null && event.pointerId !== pointer)) return;
-    if (pointer === null && tool !== 'polygon') return;
+    if (pointer === null && tool !== 'polygon' && !isInk(tool)) return;
     if (!editor) return;
     hover = point(event);
+    if (isInk(tool)) curves.update(hover);
     if (drag) drag.end = hover;
     requestDraw();
   }
@@ -1245,7 +1692,9 @@ function installDrawingTools(surface, toolbar, config) {
         const first = points.length && editor.canvasToClient(points[0].x, points[0].y);
         if (points.length >= 3 && Math.hypot(first.x-event.clientX,first.y-event.clientY) <= 9) polygonDone();
         else if (!points.length || Math.hypot(p.x-points[points.length-1].x,p.y-points[points.length-1].y) > 0.001) points.push(p);
-      } else if (tool === 'wand' && inImage(p)) wandAt(p, mask);
+      } else if (tool === 'curve') curves.add(p);
+      else if (tool === 'pressure' || tool === 'edit') void writeCurve(curves.editResult(p),false);
+      else if (tool === 'wand' && inImage(p)) wandAt(p, mask);
       else if (tool === 'gradient' && drag) {
         const line = {start:drag.start,end:p};
         drag = null;
@@ -1274,6 +1723,12 @@ function installDrawingTools(surface, toolbar, config) {
     ctx.setTransform((right.x-origin.x)/editor.width,(right.y-origin.y)/editor.width,
       (bottom.x-origin.x)/editor.height,(bottom.y-origin.y)/editor.height,origin.x,origin.y);
     ctx.imageSmoothingEnabled = false;
+    if (isInk(tool)) {
+      if (!busy && curves.needsSync(editor)) {
+        try { requireEditor(); curves.sync(editor,mask); } catch (e) { ctx.restore(); failure(e); return; }
+      }
+      curves.draw(ctx,tool,hover,screen,tool==='curve' ? curveClip() : null);
+    }
     if (drag && Math.hypot(drag.end.x-drag.start.x,drag.end.y-drag.start.y) >= 0.1) {
       const preset = gradient();
       if (!gradientLayer || gradientLayer.width !== editor.width || gradientLayer.height !== editor.height) gradientLayer = drawingCanvas(editor.width,editor.height);
@@ -1301,8 +1756,9 @@ function installDrawingTools(surface, toolbar, config) {
     }
   }
   pad.onpointerdown = down; pad.onpointermove = move; pad.onpointerup = up;
-  pad.onpointercancel = () => { pointer = null; drag = null; hover = null; requestDraw(); };
-  pad.ondblclick = event => { event.preventDefault(); if (tool === 'polygon') polygonDone(); };
+  pad.onpointercancel = () => { pointer = null; drag = null; hover = null; curves.cancelDrag(); requestDraw(); };
+  pad.ondblclick = event => { event.preventDefault(); finishPoints(); };
+  pad.oncontextmenu = event => { if (tool==='curve') { event.preventDefault(); finishPoints(); } };
   for (const name of ['pointerdown','pointerup','mousedown','mousemove','mouseup','touchstart','touchmove','touchend','click','dblclick','contextmenu']) {
     host.addEventListener(name, e => e.stopPropagation());
   }
@@ -1310,8 +1766,16 @@ function installDrawingTools(surface, toolbar, config) {
     closeMobilePalette();
     pad.focus({preventScroll:true});
   };
-  finishBtn.onclick = polygonDone;
-  undoPt.onclick = () => { points.pop(); controls(); requestDraw(); };
+  finishBtn.onclick = finishPoints;
+  undoPt.onclick = backPoint;
+  q('[data-cancel-curve]').onclick = () => chooseTool('');
+  for (const [selector,direction] of [['[data-raise]',1],['[data-lower]',-1]]) {
+    q(selector).onclick = () => {
+      if (busy || tool!=='edit') return;
+      try { requireEditor(); curves.sync(editor,mask); void writeCurve(curves.reorder(direction),false); }
+      catch (e) { failure(e); }
+    };
+  }
   q('[data-tolerance]').oninput = () => { q('[data-tolerance-value]').textContent = q('[data-tolerance]').value; };
   q('[data-tolerance]').onchange = q('[data-contiguous]').onchange = q('[data-combine]').onchange = adjustWand;
   q('[data-erase]').onclick = () => void paint('erase');
@@ -1324,11 +1788,15 @@ function installDrawingTools(surface, toolbar, config) {
       el.isContentEditable || el.matches?.('input,select,textarea,dialog,a[href]') ||
       (event.key === 'Enter' && el.tagName === 'BUTTON'))) return;
     if (event.key === 'Escape') chooseTool('');
-    else if (event.key === 'Enter' && tool === 'polygon') polygonDone();
-    else if (event.key === 'Backspace' && tool === 'polygon') { points.pop(); controls(); requestDraw(); }
+    else if (event.key === 'Enter' && (tool === 'polygon' || tool==='curve')) finishPoints();
+    else if ((event.key === 'Backspace' && (tool==='polygon' || tool==='curve')) ||
+      (tool==='curve' && curves.count() && (event.ctrlKey || event.metaKey) && event.key.toLowerCase()==='z' && !event.shiftKey)) backPoint();
     else return;
     event.preventDefault(); event.stopImmediatePropagation();
   }, {capture:true, signal:lifecycle.signal});
+  for (const name of ['keyup','click']) document.addEventListener(name, () => {
+    if (isInk(tool)) requestDraw();
+  }, {capture:true,signal:lifecycle.signal});
   toolsContainer.addEventListener('click', event => {
     if (event.target.closest?.('.one_tool[data-tool]:not(.one_tool--disabled)') && (tool || showSelection)) chooseTool('');
   }, {capture:true, signal:lifecycle.signal});
@@ -1393,6 +1861,136 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 else startDrawingTools();
 })();
 // END bundled drawing tools
+
+// This preference only changes the presentation of identifiable account controls on this page.
+(function localAppearance() {
+  'use strict';
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', localAppearance, {once:true});
+    return;
+  }
+  const ru = (document.documentElement.lang || (location.hostname.endsWith('.ru') ? 'ru' : 'en')).toLowerCase().startsWith('ru');
+  const alias = ru ? 'Вы' : 'You';
+  const avatar = '.ava_comment a,.ava_msg a,a.one-author-picture__ava-img,a.one-user-canvas__ava,' +
+    'a.one-layer__ava-link,a.one-layer__user-ava,.one-popular-profile__ava a,a.one-popular-profile__ava,' +
+    '.wall-post__avatar a,a.wall-post__avatar,.one-canvas__user-ava a,a.one-canvas__user-ava';
+  const nickname = '.user_comment a,.name_msg a,a.one-author-picture__user-name,.one-popular-profile__name a,' +
+    'a.one-popular-profile__name,.wall-post__author a,a.wall-post__author,.wall-post__user-name a,a.wall-post__user-name';
+  const row = '.one-layer,.one-user-canvas';
+  const slots = 'a[href],a[data-le-alias],a[data-le-avatar],'+row;
+  const group = document.createElement('div');
+  group.className = 'one_set';
+  group.dataset.leAppearance = '';
+  const heading = document.createElement('strong');
+  heading.textContent = 'Loneti essentials';
+  const label = document.createElement('label'), box = document.createElement('input');
+  box.type = 'checkbox';
+  label.append(box, ru ? 'Скрывать мой аватар и ник на этом устройстве' : 'Hide my avatar and nickname on this device');
+  group.append(heading,label);
+  const style = document.createElement('style');
+  style.textContent = `
+    [data-le-appearance]{border-top:1px solid #486b8b55;color:#192e43;margin-top:.5em;padding:10px}
+    [data-le-appearance] strong{display:block;font-size:.9em;margin-bottom:.35em}
+    [data-le-appearance] label{display:flex;gap:.5em;align-items:flex-start;line-height:1.4;cursor:pointer;font-weight:normal}
+    [data-le-appearance] input{flex:none;margin:.2em 0 0}
+    [data-le-alias],[data-le-alias] *:not(.icon_top_link){font-size:0!important;text-shadow:none!important}
+    [data-le-alias]::after{content:attr(data-le-alias);font:normal 13px/1.4 system-ui,sans-serif}
+    [data-le-avatar] img{opacity:0!important}
+    [data-le-avatar]:not(#cur_user),#cur_user[data-le-avatar] .icon_top_link{background:#949d9c!important;border-radius:50%}
+  `;
+  document.head.append(style);
+  let profile, ownName, key, enabled;
+  function path(a) {
+    if (!a?.hasAttribute('href')) return '';
+    try {
+      const u = new URL(a.getAttribute('href'),location.href);
+      return u.origin === location.origin ? u.pathname.replace(/\/$/,'').toLowerCase() : '';
+    } catch { return ''; }
+  }
+  function preference() {
+    try { return !!key && localStorage.getItem(key)==='1'; } catch { return false; }
+  }
+  const originalTitles = new WeakMap();
+  function mark(el, name, image) {
+    if (name) el.setAttribute('data-le-alias',alias); else el.removeAttribute('data-le-alias');
+    el.toggleAttribute('data-le-avatar',image);
+    for (const target of [el,...el.querySelectorAll('img[title]')]) {
+      if ((name || image) && target.title && target.title !== alias) {
+        originalTitles.set(target,target.title); target.title = alias;
+      } else if (!name && !image && originalTitles.has(target)) {
+        if (target.title===alias) target.title = originalTitles.get(target);
+        originalTitles.delete(target);
+      }
+    }
+  }
+  function update(el) {
+    if (el.matches(row)) {
+      const people = el.matches('.one-layer') ? el.querySelectorAll('.one-layer__user') : [el];
+      for (const person of people) {
+        const link = person.querySelector('a.one-layer__user-ava,a.one-user-canvas__ava');
+        const name = person.querySelector('.one-layer__user-name,.one-user-canvas__name');
+        if (name) mark(name,enabled && path(link)===profile,false);
+      }
+      return;
+    }
+    const own = enabled && path(el)===profile;
+    if (!own && !el.hasAttribute('data-le-alias') && !el.hasAttribute('data-le-avatar')) return;
+    // Other site layouts also link a profile picture or a plain nickname directly to the account.
+    // Exclude authored content, so mentioning your own name in a post leaves the message intact.
+    const outsideBody = !el.closest('.body_comment,.body_msg,.text_msg,.smile_msg,.smile_body,.wall-post__body,.wall-post__text');
+    const simpleName = outsideBody && ownName && el.textContent.trim()===ownName && !el.querySelector('button,input,img,svg');
+    const profilePicture = outsideBody && !!el.querySelector('img[src*="/pic/avatars/"],img[src*="/pic/ava/"]');
+    mark(el,own && (el.id==='cur_user' || el.matches(nickname) || simpleName),
+      own && (el.id==='cur_user' || el.matches(avatar) || profilePicture));
+  }
+  function scan(root) {
+    if (root.matches?.(slots)) update(root);
+    root.querySelectorAll(slots).forEach(update);
+  }
+  function refresh() {
+    const account = document.querySelector('a#cur_user[href]');
+    const who = path(account);
+    ownName = account?.textContent.trim();
+    if (who !== profile) {
+      profile = who; key = who && 'le:hide-identity:'+who; enabled = preference(); return true;
+    }
+    return false;
+  }
+  function settings() {
+    const list = profile && document.querySelector('.lcol_set .list_sets');
+    if (list && group.parentElement!==list) list.append(group);
+    if (!list && group.isConnected) group.remove();
+    box.checked = !!enabled;
+  }
+  box.onchange = () => {
+    enabled = box.checked;
+    try { if (enabled) localStorage.setItem(key,'1'); else localStorage.removeItem(key); } catch { /* session only */ }
+    scan(document);
+  };
+  window.addEventListener('storage', event => {
+    if (event.key===key || event.key===null) { enabled=preference(); settings(); scan(document); }
+  });
+  refresh(); settings(); if (enabled) scan(document);
+  new MutationObserver(records => {
+    const changed = refresh();
+    if (!group.isConnected || changed) settings();
+    if (changed) { scan(document); return; }
+    if (!enabled) return;
+    const roots = new Set();
+    for (const record of records) {
+      const container = record.target.closest?.(row);
+      if (container) roots.add(container);
+      if (record.type==='attributes') {
+        if (!record.target.hasAttribute('href') && record.target.matches('[data-le-alias],[data-le-avatar]')) mark(record.target,false,false);
+        else roots.add(record.target);
+      }
+      const link = record.target.closest?.('a[href]');
+      if (link) roots.add(link);
+      for (const node of record.addedNodes) if (node.nodeType===1) roots.add(node);
+    }
+    roots.forEach(scan);
+  }).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['href']});
+})();
 
 (function startSmileLibrary() {
   'use strict';

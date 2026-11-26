@@ -3,6 +3,9 @@
     <string name="offline">Не удалось открыть LONETI</string>
     <string name="connection_help">Проверьте подключение к интернету и попробуйте ещё раз.</string>
     <string name="retry">Попробовать снова</string>
+    <string name="link_warning_title">Ссылки на LONETI</string>
+    <string name="dismiss_warning">Понятно</string>
+    <string name="link_warning">Вопреки расхожему убеждению - админ живее всех живых и нещадно банит тех, кто оставляет ссылки на стене, в комнатах или в комментах. Будьте осторожны. старайтесь не постить ссылки на loneti, если есть желание поделиться - используйте сторонние сервисы</string>
     <string name="system_language">Как на устройстве</string>
     <string name="available_update">Доступно обновление %1$s</string>
     <string name="download_update">Скачать</string>

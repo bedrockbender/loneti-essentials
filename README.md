@@ -1,6 +1,6 @@
 # Loneti essentials
 
-Draw on LONETI with polygon and color selections and editable gradients. Collect Smiles from direct messages, Wall posts and replies, drawing comments, and room chats. Share them with friends as packs. The Android app and Tampermonkey userscript include the same tools.
+Draw on LONETI with editable ink curves, point pressure, polygon and color selections, and gradients. Collect Smiles from direct messages, Wall posts and replies, drawing comments, and room chats. Share them with friends as packs. The Android app and Tampermonkey userscript include the same tools.
 
 [Install Loneti essentials](https://bedrockbender.github.io/loneti-essentials/) · [Android releases](https://github.com/bedrockbender/loneti-essentials/releases) · [Report a bug](https://github.com/bedrockbender/loneti-essentials/issues/new)
 
@@ -26,10 +26,17 @@ From Android 2.3.0, opening or returning to the app checks the published release
 
 The userscript follows LONETI’s page language automatically. The installation guide starts in your browser’s preferred supported language and remembers your choice of **EN** or **Русский**.
 
+## Local display settings
+
+In **Settings → Loneti essentials**, **Hide my avatar and nickname on this device** replaces identifiable author names with “You” and masks your profile picture in supported views. The setting is local to the signed-in profile and site. Android also shows a dismissible link-posting warning on first use. The installation guide keeps the warning visible in English and Russian.
+
 ## Draw
 
 Select an unlocked layer in a standalone drawing, room, Smile, or avatar editor. In LONETI’s tool palette, look for the polygon and wand beside the lasso and the gradient beside the paint bucket. Hover over an icon for its name and a short hint. On a phone, open the tools palette at the bottom of the editor. You can reopen it while drawing to adjust the active tool.
 
+- **Curve** draws a smooth stroke through the points you tap. Choose **Round ink** or **Hand ink**, width and color. Double-click, right-click, press **Enter**, or choose **Finish** to paint it. **Undo point** removes the last point and **Cancel** discards the draft.
+- **Pressure** adjusts one control point at a time. Drag right or up to thicken the line, left or down to thin it, all the way to zero.
+- **Edit** moves, adds and deletes control points and can deform, duplicate, split, join, reorder or smooth strokes. Curves retain the selection they were drawn in. Deselect to edit across selections. Points are local to the open editor. Native Undo and Redo restore stroke revisions, and saved or shared drawings contain ordinary pixels.
 - **Polygon** adds a vertex wherever you tap in the workspace, including outside the canvas. Tap the first vertex, press **Enter**, or choose **Finish** to close the shape. **Undo point** removes the last vertex. The selection is clipped to the canvas when you finish.
 - **Magic wand** selects colors on the active layer. Adjust **Tolerance** before or after tapping a pixel. Clear **Contiguous pixels only** to include matching islands. Both selection tools can replace, add to, subtract from, or intersect the current selection.
 - **Gradient** applies a linear or radial blend in the direction you drag. Tap the strip to add a color stop, drag the stop along the strip to move it, and use **Stop color** to change its color. You can also focus a stop and use the left and right arrow keys or adjust **Position**. Save, rename, or delete personal presets in the panel. Presets stay in the current app or browser on that LONETI domain.
@@ -78,4 +85,4 @@ Read-Host 'Keystore password' -AsSecureString | ConvertFrom-SecureString |
 
 The build verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-essentials.apk`. Android requires matching signing keys for an in-place update. Use a spare device or emulator to try a locally signed build if the official app is already installed.
 
-The [Android 2.3.0 source](https://github.com/bedrockbender/loneti-essentials/tree/android-v2.3.0) includes in-app language selection and update notices. It bundles the [3.2.0 userscript](https://github.com/bedrockbender/loneti-essentials/tree/userscript-v3.2.0). For an Android release, publish the signed APK at `android-v<versionName>/Loneti-essentials.apk` on GitHub Releases before deploying the matching `versionCode` and `versionName` in `android/latest.json` to the website.
+The [Android 2.4.0 source](https://github.com/bedrockbender/loneti-essentials/tree/android-v2.4.0) bundles the [3.3.0 userscript](https://github.com/bedrockbender/loneti-essentials/tree/userscript-v3.3.0). For an Android release, publish the signed APK at `android-v<versionName>/Loneti-essentials.apk` on GitHub Releases before deploying the matching `versionCode` and `versionName` in `android/latest.json` to the website.

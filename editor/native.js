@@ -262,6 +262,14 @@ function getNativeEditor() {
 
   return {
     canvas, layerKey: canvas, surface, mode, width, height,
+    historyKey: () => history.getCurrentState(),
+    curveRevision(versions) {
+      for (let i = history.current_index; i >= 0; i--) {
+        const revision = versions.get(history.states[i]);
+        if (revision?.layer === canvas && revision.base.width === width && revision.base.height === height) return revision;
+      }
+      return null;
+    },
     clientToCanvas(clientX, clientY) {
       const rect = surface.getBoundingClientRect();
       return engine.transform_canvas.transform.getInverted().getTransformedPoint({
@@ -350,6 +358,7 @@ function getNativeEditor() {
       if (room) nativeEditorPublishHistory(engine, user, history);
       // Native Save can open its preview before the next animation frame.
       engine.art_canvas.renderLayers();
+      return history.getCurrentState();
     },
     setSelection(mask, maskWidth = width, maskHeight = height) {
       const room = ensureEdit();

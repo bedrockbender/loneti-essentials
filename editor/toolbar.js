@@ -1,4 +1,7 @@
 const toolIcons = {
+  curve: '<path d="M3 18C7 18 6 5 12 6s3 14 9 7"/><g fill="white"><circle cx="3" cy="18" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="21" cy="13" r="2"/></g>',
+  pressure: '<path d="M2 18Q12 17 21 4Q17 18 2 20Z" fill="currentColor"/><path d="m5 11 5-6m-4 0h4v4"/>',
+  edit: '<path d="M2 17Q7 3 18 7"/><rect x="2" y="14" width="4" height="4" fill="white"/><path d="m11 9 9 6-4 1 2 5-3 1-2-6-3 3Z" fill="white"/>',
   polygon: '<path d="m4 17 4-13 13 6-4 10Z" stroke-dasharray="2 2"/><g fill="white"><path d="M2.5 15.5h3v3h-3zM6.5 2.5h3v3h-3zM19.5 8.5h3v3h-3zM15.5 18.5h3v3h-3z"/></g>',
   wand: '<path d="m3 19 11-11 2.6 2.6-11 11z" fill="currentColor"/><path d="m12.7 12.5 2.5 2.5" stroke="white"/><path d="m9 3 .6 1.8L11.5 5l-1.9.6L9 7.5l-.6-1.9L6.5 5l1.9-.2ZM18 2l.7 2.3L21 5l-2.3.7L18 8l-.7-2.3L15 5l2.3-.7ZM20 12v4m-2-2h4" stroke-width="1.2"/>',
   gradient: '<defs><linearGradient id="le-tool-ramp" x2="1" y2=".4" gradientUnits="objectBoundingBox"><stop stop-color="#303030"/><stop offset="1" stop-color="white"/></linearGradient></defs><rect x="2" y="4.5" width="20" height="15" rx="1.5" fill="url(#le-tool-ramp)"/>',
@@ -6,6 +9,9 @@ const toolIcons = {
 
 function createToolButtons(toolbar, tr, chooseTool) {
   const items = [
+    ['curve', tr('Curve','Кривая'), tr('Place points to draw an ink stroke.','Расставьте точки кривой.'), 'brush'],
+    ['pressure', tr('Pressure','Нажим'), tr('Drag a curve point to change its width.','Потяните точку кривой, чтобы изменить нажим.'), 'curve'],
+    ['edit', tr('Edit','Правка'), tr('Reshape curve points and strokes.','Изменяйте точки и форму кривых.'), 'pressure'],
     ['polygon', tr('Polygon','Многоугольник'), tr('Click to place vertices. Click the first vertex to finish.','Ставьте вершины щелчком. Нажмите на первую, чтобы замкнуть контур.'), 'lasso'],
     ['wand', tr('Magic wand','Волшебная палочка'), tr('Select pixels of a similar color.','Нажмите на цвет, чтобы выделить похожие пиксели.'), 'polygon'],
     ['gradient', tr('Gradient','Градиент'), tr('Drag to blend colors across the layer or selection.','Проведите линию, чтобы растянуть цвета по слою или выделению.'), 'fillbrush'],
