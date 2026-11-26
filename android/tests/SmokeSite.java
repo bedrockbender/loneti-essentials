@@ -33,6 +33,7 @@ final class SmokeSite extends WebViewClient {
     SmokeSite(WebViewClient production) {
         this.production = production;
         assets.put("fixture", png(300, Color.RED));
+        assets.put("comment", png(300, Color.GREEN));
         items.put("101", "fixture");
     }
 
@@ -55,13 +56,19 @@ final class SmokeSite extends WebViewClient {
         }
         String path = url.getPath();
         if ("/".equals(path)) {
-            return page("<h1>Local LONETI smoke fixture</h1><a href='/pict400_100'>Open smoke drawing</a>");
+            return page("<h1>Local LONETI smoke fixture</h1><a href='/draw'>Open smoke editor</a>");
+        }
+        if ("/draw".equals(path)) return editor();
+        if ("/draw/frame".equals(path)) {
+            return page("<h2>Frame fixture</h2>",
+                    "window.fixtureFrameClean=!window.__lonetiCollectorInstalled"
+                    + "&&!Object.getOwnPropertyDescriptor(Object.prototype,'transform_canvas');");
         }
         if ("/pict400_100".equals(path)) {
-            return page("<a href='/settings?act=smiles'>Open smoke library</a>"
-                    + "<div class='list_comments'><div class='one_comment'><div class='body_comment'>"
-                    + "Smoke comment<div class='smile_body'><img src='/pic/smiles/fixture-sm.png'>"
-                    + "</div></div></div></div>");
+            return comment("comment", "<a href='/pict400_101'>Open already-owned Smile</a>");
+        }
+        if ("/pict400_101".equals(path)) {
+            return comment("fixture", "<a href='/settings?act=smiles'>Open smoke library</a>");
         }
         if ("/settings".equals(path) && "smiles".equals(url.getQueryParameter("act"))) {
             return library();
@@ -76,6 +83,24 @@ final class SmokeSite extends WebViewClient {
     }
 
     synchronized int saveCount() { return saves; }
+
+    private static WebResourceResponse editor() {
+        return page("<a href='/pict400_100'>Open smoke drawing</a>"
+                        + "<div class='js--container-work-canvas'><canvas class='js--work-canvas'></canvas></div>"
+                        + "<iframe src='/draw/frame' title='Frame fixture' hidden></iframe>",
+                "window.fixtureHookAtHead=window.__lonetiCollectorInstalled===true"
+                        + "&&typeof Object.getOwnPropertyDescriptor(Object.prototype,'transform_canvas')?.set==='function';"
+                        + "const nativeEngine={realCoords(){},drawing_area:{getContainerWork(){}},"
+                        + "users_canvas:{getMyUser(){}},layer_actions:{checkLockLayer(){}}};"
+                        + "nativeEngine.transform_canvas={coordsToDisplay(){},transform:{getInverted(){}}};"
+                        + "window.fixtureObserverRemoved=!Object.getOwnPropertyDescriptor(Object.prototype,'transform_canvas');");
+    }
+
+    private static WebResourceResponse comment(String smile, String next) {
+        return page(next + "<div class='list_comments'><div class='one_comment'><div class='body_comment'>"
+                + "Smoke comment<div class='smile_body'><img src='/pic/smiles/" + smile + "-sm.png'>"
+                + "</div></div></div></div>");
+    }
 
     private WebResourceResponse save(String data) {
         if (!data.startsWith("data:image/png;base64,")) return reply(400, "text/plain", new byte[0]);
@@ -102,10 +127,15 @@ final class SmokeSite extends WebViewClient {
     }
 
     private static WebResourceResponse page(String body) {
+        return page(body, "");
+    }
+
+    private static WebResourceResponse page(String body, String firstScript) {
         // The platform omits POST bodies from WebResourceRequest. Relay only
         // this fixture's save form as a test-only request to the local mock.
         String html = "<!doctype html><html lang='en'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-                + "<title>Local smoke fixture</title><style>body{font:16px sans-serif;padding:12px}img{width:50px;height:50px}"
+                + "<title>Local smoke fixture</title><script>" + firstScript + "</script>"
+                + "<style>body{font:16px sans-serif;padding:12px}img{width:50px;height:50px}"
                 + ".one_smile{display:inline-block;padding:4px}a{display:inline-block;padding:4px}</style>"
                 + "<script>const originalFetch=window.fetch.bind(window);window.fetch=(url,options)=>{"
                 + "if(String(url)==='/settings?save=smile'&&options?.method==='POST'){"

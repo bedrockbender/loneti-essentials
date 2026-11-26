@@ -59,7 +59,7 @@ public final class SmokeTest extends Instrumentation {
             String output = shell("am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n " + launchName);
             require(output.contains("Status: ok") && !output.contains("Error:"), "Activity start failed: " + output.trim());
             awaitApp(target);
-            awaitText("Smile Collector");
+            awaitText("Loneti essentials");
             return;
         }
         Activity activity = startActivitySync(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -77,6 +77,13 @@ public final class SmokeTest extends Instrumentation {
         });
         awaitText("Local LONETI smoke fixture");
         awaitWebViewFeatures(fixtureWeb[0]);
+        click("Open smoke editor");
+        awaitText("Open smoke drawing");
+        awaitJs(fixtureWeb[0], "window.fixtureHookAtHead===true"
+                + "&&window.fixtureObserverRemoved===true"
+                + "&&document.querySelector('iframe')?.contentWindow.fixtureFrameClean===true"
+                + "&&document.querySelectorAll('.js--container-work-canvas [data-loneti-essentials=tools]').length===1",
+                "one early drawing hook before the first inline script, one DOM-ready toolbar and no iframe hook");
         click("Open smoke drawing");
         click("Add this Smile to My emotes");
         awaitText("Add this Smile?");
@@ -86,6 +93,14 @@ public final class SmokeTest extends Instrumentation {
         click("Add to my Smiles");
         awaitText("Added to My emotes");
         click("Close");
+        require(fixtureSite[0].saveCount() == 1, "Collector did not save exactly once");
+        click("Open already-owned Smile");
+        click("Add this Smile to My emotes");
+        click("Add to my Smiles");
+        awaitText("Already added");
+        awaitText("This Smile is already in Unsorted.");
+        click("Close");
+        require(fixtureSite[0].saveCount() == 1, "Already-owned Smile sent another save");
         click("Open smoke library");
         awaitText("Unsorted (2)");
 
@@ -95,7 +110,7 @@ public final class SmokeTest extends Instrumentation {
             click("Preview pack");
             awaitText(PackFixture.NAME);
             click("Install pack");
-            awaitText("Installed " + PackFixture.NAME + " in My emotes.");
+            awaitText("Added: 1. Already in My emotes: 0.");
             click("Close");
             awaitText(PackFixture.NAME + " (1)");
             require(fixtureSite[0].saveCount() == 2, "Expected one collector and one pack save");
@@ -161,16 +176,29 @@ public final class SmokeTest extends Instrumentation {
         }
     }
 
-    private void awaitWebViewFeatures(WebView web) throws InterruptedException {
+    private String evaluate(WebView web, String script) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<String> features = new AtomicReference<>();
-        runOnMainSync(() -> web.evaluateJavascript("JSON.stringify({abort:typeof AbortController,timeout:typeof AbortSignal.timeout,"
-                + "crypto:!!window.crypto?.subtle,locks:!!navigator.locks})", result -> {
-                    features.set(result);
-                    latch.countDown();
-                }));
-        require(latch.await(10, TimeUnit.SECONDS), "WebView did not evaluate fixture capability check");
-        String result = features.get();
+        AtomicReference<String> result = new AtomicReference<>();
+        runOnMainSync(() -> web.evaluateJavascript(script, value -> {
+            result.set(value);
+            latch.countDown();
+        }));
+        require(latch.await(10, TimeUnit.SECONDS), "WebView did not evaluate fixture JavaScript");
+        return result.get();
+    }
+
+    private void awaitJs(WebView web, String expression, String description) throws InterruptedException {
+        long deadline = SystemClock.uptimeMillis() + 15000;
+        while (SystemClock.uptimeMillis() < deadline) {
+            if ("true".equals(evaluate(web, expression))) return;
+            SystemClock.sleep(150);
+        }
+        throw new AssertionError("Could not verify " + description + "; visible: " + visibleLabels());
+    }
+
+    private void awaitWebViewFeatures(WebView web) throws InterruptedException {
+        String result = evaluate(web, "JSON.stringify({abort:typeof AbortController,timeout:typeof AbortSignal.timeout,"
+                + "crypto:!!window.crypto?.subtle,locks:!!navigator.locks})");
         require(result != null && result.contains("function") && !result.contains("undefined") && !result.contains("false"),
                 "WebView lacks basic abort handling, Web Crypto, or Web Locks: " + result);
     }
