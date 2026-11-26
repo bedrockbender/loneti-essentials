@@ -29,10 +29,12 @@
           <div class="hero-copy" data-locale="en-US">
             <h1>Install <em>Smile Collector</em></h1>
             <p>Collect Smiles on LONETI, organize them into packs, and share your packs with friends.</p>
+            <a class="android-discovery" href="#android-setup">Get the Android app</a>
           </div>
           <div class="hero-copy" data-locale="ru-RU" lang="ru-RU" hidden>
             <h1>Установка <em>Smile Collector</em></h1>
             <p>Сохраняйте смайлы на LONETI, собирайте их в наборы и делитесь наборами с друзьями.</p>
+            <a class="android-discovery" href="#android-setup">Приложение для Android</a>
           </div>
           <div class="smile-stack" aria-hidden="true">
             <span class="smile-card card-back"></span>
@@ -43,93 +45,128 @@
           </div>
         </div>
 
-        <div data-locale="en-US">
-          <ol class="install-steps" aria-label="Installation steps">
-            <li>
-              <h2>Prepare your browser</h2>
-              <a class="button button-secondary" data-install-extension href="https://www.tampermonkey.net/" target="_blank" rel="noopener" aria-label="Install Tampermonkey (opens in a new tab)">Install Tampermonkey</a>
-              <p>The button opens the extension store in a new tab. Follow the steps for your browser.</p>
-              <details name="browser-en" data-browser="chrome">
-                <summary>Google Chrome</summary>
-                <ol>
-                  <li>In the store, click <strong>Add to Chrome</strong>, then <strong>Add extension</strong>.</li>
-                  <li>Open a new tab. Type <code>chrome://extensions</code> in the address bar and press <kbd>Enter</kbd>. You’ll see Chrome’s list of extensions.</li>
-                  <li>Find the <strong>Tampermonkey</strong> card. Click <strong>Details</strong> and turn on <strong>Allow User Scripts</strong>.</li>
-                  <li>Come back to this guide and click the green button in step 2.</li>
-                </ol>
-                <p class="permission-help">Switch missing? Go back to <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q209">See Tampermonkey’s instructions</a>.</p>
-              </details>
-              <details name="browser-en" data-browser="edge">
-                <summary>Microsoft Edge</summary>
-                <ol>
-                  <li>In the store, click <strong>Get</strong> and confirm <strong>Add extension</strong>.</li>
-                  <li>Open a new tab. Type <code>edge://extensions</code> in the address bar and press <kbd>Enter</kbd>. You’ll see Edge’s list of extensions.</li>
-                  <li>On the <strong>Tampermonkey</strong> card, click <strong>Details</strong>. Turn on <strong>Allow User Scripts</strong> if it appears. If it’s missing, go back to <code>edge://extensions</code> and turn on <strong>Developer mode</strong>.</li>
-                  <li>Come back to this guide and continue with step 2.</li>
-                </ol>
-              </details>
-              <details name="browser-en" data-browser="firefox">
-                <summary>Mozilla Firefox</summary>
-                <p>In the store, click <strong>Add to Firefox</strong>, then <strong>Add</strong>. Come back to this guide and continue with step 2.</p>
-              </details>
-            </li>
-            <li>
-              <h2>Add the userscript</h2>
-              <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Install LONETI Smile Collector</a>
-              <p>Click the green button above. Tampermonkey will show <strong>LONETI Smile Collector</strong>. Click <strong>Install</strong> on that screen, then return here.</p>
-              <details><summary>I see code instead of an Install button</summary><p>Check that Tampermonkey is enabled in your browser and that you finished step 1. Close the code tab and click the green button again. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Manual installation instructions</a>.</p></details>
-            </li>
-            <li>
-              <h2>Try your first Smile</h2>
-              <a class="button button-secondary" href="https://loneti.art/">Open LONETI</a>
-              <p>Sign in to LONETI. If it was already open, reload the tab. Open a drawing and click a Smile in its comments. When you see the preview, setup is complete. Click <strong>Add to my Smiles</strong> to keep it or <strong>Cancel</strong> to close.</p>
-            </li>
-          </ol>
+        <div id="desktop-setup">
+          <div data-locale="en-US">
+            <ol class="install-steps" aria-label="Installation steps">
+              <li>
+                <h2>Prepare your browser</h2>
+                <a class="button button-secondary" data-install-extension href="https://www.tampermonkey.net/" target="_blank" rel="noopener" aria-label="Install Tampermonkey (opens in a new tab)">Install Tampermonkey</a>
+                <p>The button opens the extension store in a new tab. Follow the steps for your browser.</p>
+                <details name="browser-en" data-browser="chrome">
+                  <summary>Google Chrome</summary>
+                  <ol>
+                    <li>In the store, click <strong>Add to Chrome</strong>, then <strong>Add extension</strong>.</li>
+                    <li>Open a new tab. Type <code>chrome://extensions</code> in the address bar and press <kbd>Enter</kbd>. You’ll see Chrome’s list of extensions.</li>
+                    <li>Find the <strong>Tampermonkey</strong> card. Click <strong>Details</strong> and turn on <strong>Allow User Scripts</strong>.</li>
+                    <li>Come back to this guide and click the green button in step 2.</li>
+                  </ol>
+                  <p class="permission-help">Switch missing? Go back to <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q209">See Tampermonkey’s instructions</a>.</p>
+                </details>
+                <details name="browser-en" data-browser="edge">
+                  <summary>Microsoft Edge</summary>
+                  <ol>
+                    <li>In the store, click <strong>Get</strong> and confirm <strong>Add extension</strong>.</li>
+                    <li>Open a new tab. Type <code>edge://extensions</code> in the address bar and press <kbd>Enter</kbd>. You’ll see Edge’s list of extensions.</li>
+                    <li>On the <strong>Tampermonkey</strong> card, click <strong>Details</strong>. Turn on <strong>Allow User Scripts</strong> if it appears. If it’s missing, go back to <code>edge://extensions</code> and turn on <strong>Developer mode</strong>.</li>
+                    <li>Come back to this guide and continue with step 2.</li>
+                  </ol>
+                </details>
+                <details name="browser-en" data-browser="firefox">
+                  <summary>Mozilla Firefox</summary>
+                  <p>In the store, click <strong>Add to Firefox</strong>, then <strong>Add</strong>. Come back to this guide and continue with step 2.</p>
+                </details>
+              </li>
+              <li>
+                <h2>Add the userscript</h2>
+                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Install LONETI Smile Collector</a>
+                <p>Click the green button above. Tampermonkey will show <strong>LONETI Smile Collector</strong>. Click <strong>Install</strong> on that screen, then return here.</p>
+                <details><summary>I see code instead of an Install button</summary><p>Check that Tampermonkey is enabled in your browser and that you finished step 1. Close the code tab and click the green button again. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Manual installation instructions</a>.</p></details>
+              </li>
+              <li>
+                <h2>Try your first Smile</h2>
+                <a class="button button-secondary" href="https://loneti.art/">Open LONETI</a>
+                <p>Sign in to LONETI. If it was already open, reload the tab. Open a drawing and click a Smile in its comments. When you see the preview, setup is complete. Click <strong>Add to my Smiles</strong> to keep it or <strong>Cancel</strong> to close.</p>
+              </li>
+            </ol>
+          </div>
+
+          <div data-locale="ru-RU" lang="ru-RU" hidden>
+            <ol class="install-steps" aria-label="Шаги установки">
+              <li>
+                <h2>Подготовьте браузер</h2>
+                <a class="button button-secondary" data-install-extension href="https://www.tampermonkey.net/" target="_blank" rel="noopener" aria-label="Установить Tampermonkey (откроется в новой вкладке)">Установить Tampermonkey</a>
+                <p>Кнопка откроет магазин расширений в новой вкладке. Дальше следуйте инструкции для своего браузера.</p>
+                <details name="browser-ru" data-browser="chrome">
+                  <summary>Google Chrome</summary>
+                  <ol>
+                    <li>В магазине нажмите <strong>«Установить»</strong>, затем <strong>«Установить расширение»</strong>.</li>
+                    <li>Откройте новую вкладку. Введите <code>chrome://extensions</code> в адресную строку и нажмите <kbd>Enter</kbd>. Откроется список расширений самого Chrome.</li>
+                    <li>Найдите карточку <strong>Tampermonkey</strong>. Нажмите <strong>«Сведения»</strong> и включите <strong>«Разрешить пользовательские скрипты»</strong>.</li>
+                    <li>Вернитесь на эту страницу и нажмите зелёную кнопку в шаге 2.</li>
+                  </ol>
+                  <p class="permission-help">Нет такого переключателя? Вернитесь на <code>chrome://extensions</code> и включите <strong>«Режим разработчика»</strong>. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q209">Инструкция Tampermonkey</a>.</p>
+                </details>
+                <details name="browser-ru" data-browser="edge">
+                  <summary>Microsoft Edge</summary>
+                  <ol>
+                    <li>В магазине нажмите кнопку установки и подтвердите добавление расширения.</li>
+                    <li>Откройте новую вкладку. Введите <code>edge://extensions</code> в адресную строку и нажмите <kbd>Enter</kbd>. Откроется список расширений самого Edge.</li>
+                    <li>На карточке <strong>Tampermonkey</strong> откройте сведения о расширении. Включите <strong>«Разрешить пользовательские скрипты»</strong>. Если такого переключателя нет, вернитесь на <code>edge://extensions</code> и включите <strong>«Режим разработчика»</strong>.</li>
+                    <li>Вернитесь на эту страницу и переходите к шагу 2.</li>
+                  </ol>
+                </details>
+                <details name="browser-ru" data-browser="firefox">
+                  <summary>Mozilla Firefox</summary>
+                  <p>В магазине нажмите <strong>«Добавить в Firefox»</strong>, затем <strong>«Добавить»</strong>. Вернитесь на эту страницу и сразу переходите к шагу 2.</p>
+                </details>
+              </li>
+              <li>
+                <h2>Добавьте скрипт</h2>
+                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Установить LONETI Smile Collector</a>
+                <p>Нажмите зелёную кнопку выше. В открывшемся окне Tampermonkey нажмите <strong>«Установить»</strong> и вернитесь на эту страницу.</p>
+                <details><summary>Вместо кнопки «Установить» вижу код</summary><p>Проверьте, что Tampermonkey включён в браузере и вы выполнили шаг 1. Закройте вкладку с кодом и ещё раз нажмите зелёную кнопку. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Как установить скрипт вручную</a>.</p></details>
+              </li>
+              <li>
+                <h2>Попробуйте сохранить смайл</h2>
+                <a class="button button-secondary" href="https://loneti.ru/">Открыть LONETI</a>
+                <p>Войдите в LONETI. Если сайт уже открыт, обновите вкладку. Откройте рисунок и нажмите на смайл в комментариях. Появилось окно предпросмотра? Значит, всё работает. Нажмите <strong>Добавить в «Мои смайлы»</strong> или закройте окно кнопкой <strong>«Отмена»</strong>.</p>
+              </li>
+            </ol>
+          </div>
         </div>
 
-        <div data-locale="ru-RU" lang="ru-RU" hidden>
-          <ol class="install-steps" aria-label="Шаги установки">
-            <li>
-              <h2>Подготовьте браузер</h2>
-              <a class="button button-secondary" data-install-extension href="https://www.tampermonkey.net/" target="_blank" rel="noopener" aria-label="Установить Tampermonkey (откроется в новой вкладке)">Установить Tampermonkey</a>
-              <p>Кнопка откроет магазин расширений в новой вкладке. Дальше следуйте инструкции для своего браузера.</p>
-              <details name="browser-ru" data-browser="chrome">
-                <summary>Google Chrome</summary>
-                <ol>
-                  <li>В магазине нажмите <strong>«Установить»</strong>, затем <strong>«Установить расширение»</strong>.</li>
-                  <li>Откройте новую вкладку. Введите <code>chrome://extensions</code> в адресную строку и нажмите <kbd>Enter</kbd>. Откроется список расширений самого Chrome.</li>
-                  <li>Найдите карточку <strong>Tampermonkey</strong>. Нажмите <strong>«Сведения»</strong> и включите <strong>«Разрешить пользовательские скрипты»</strong>.</li>
-                  <li>Вернитесь на эту страницу и нажмите зелёную кнопку в шаге 2.</li>
-                </ol>
-                <p class="permission-help">Нет такого переключателя? Вернитесь на <code>chrome://extensions</code> и включите <strong>«Режим разработчика»</strong>. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q209">Инструкция Tampermonkey</a>.</p>
-              </details>
-              <details name="browser-ru" data-browser="edge">
-                <summary>Microsoft Edge</summary>
-                <ol>
-                  <li>В магазине нажмите кнопку установки и подтвердите добавление расширения.</li>
-                  <li>Откройте новую вкладку. Введите <code>edge://extensions</code> в адресную строку и нажмите <kbd>Enter</kbd>. Откроется список расширений самого Edge.</li>
-                  <li>На карточке <strong>Tampermonkey</strong> откройте сведения о расширении. Включите <strong>«Разрешить пользовательские скрипты»</strong>. Если такого переключателя нет, вернитесь на <code>edge://extensions</code> и включите <strong>«Режим разработчика»</strong>.</li>
-                  <li>Вернитесь на эту страницу и переходите к шагу 2.</li>
-                </ol>
-              </details>
-              <details name="browser-ru" data-browser="firefox">
-                <summary>Mozilla Firefox</summary>
-                <p>В магазине нажмите <strong>«Добавить в Firefox»</strong>, затем <strong>«Добавить»</strong>. Вернитесь на эту страницу и сразу переходите к шагу 2.</p>
-              </details>
-            </li>
-            <li>
-              <h2>Добавьте скрипт</h2>
-              <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Установить LONETI Smile Collector</a>
-              <p>Нажмите зелёную кнопку выше. В открывшемся окне Tampermonkey нажмите <strong>«Установить»</strong> и вернитесь на эту страницу.</p>
-              <details><summary>Вместо кнопки «Установить» вижу код</summary><p>Проверьте, что Tampermonkey включён в браузере и вы выполнили шаг 1. Закройте вкладку с кодом и ещё раз нажмите зелёную кнопку. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Как установить скрипт вручную</a>.</p></details>
-            </li>
-            <li>
-              <h2>Попробуйте сохранить смайл</h2>
-              <a class="button button-secondary" href="https://loneti.ru/">Открыть LONETI</a>
-              <p>Войдите в LONETI. Если сайт уже открыт, обновите вкладку. Откройте рисунок и нажмите на смайл в комментариях. Появилось окно предпросмотра? Значит, всё работает. Нажмите <strong>Добавить в «Мои смайлы»</strong> или закройте окно кнопкой <strong>«Отмена»</strong>.</p>
-            </li>
-          </ol>
-        </div>
+        <section class="android-setup" id="android-setup">
+          <div data-locale="en-US">
+            <div class="android-header">
+              <div>
+                <h2>Install on Android</h2>
+                <p>For phones and tablets running Android 8.0 or newer. Keep Android System WebView up to date in the Play Store.</p>
+              </div>
+              <a class="button" href="https://github.com/bedrockbender/loneti-smile-collector/releases/latest/download/Loneti-Smile-Collector.apk">Download Android APK</a>
+            </div>
+            <ol>
+              <li><strong>Download and open the APK.</strong> Find <code>Loneti-Smile-Collector.apk</code> in your downloads and tap it.</li>
+              <li><strong>Install the app.</strong> If Android asks to install unknown apps, open the prompt’s settings and allow installs from the browser or files app that opened the APK. Return and tap <strong>Install</strong>. You can turn the permission off afterward. <a href="https://support.google.com/pixelphone/answer/7391672?hl=en">Google’s installation help</a>.</li>
+              <li><strong>Open Smile Collector.</strong> Sign in to LONETI inside the app. Tap a Smile in a comment or room, then tap <strong>Add to my Smiles</strong>. You can find it under <strong>⋮ → My emotes</strong>.</li>
+            </ol>
+            <a href="#desktop-setup">Use the desktop userscript instead</a>
+          </div>
+          <div data-locale="ru-RU" lang="ru-RU" hidden>
+            <div class="android-header">
+              <div>
+                <h2>Установка на Android</h2>
+                <p>Для телефонов и планшетов с Android 8.0 и новее. Обновить Android System WebView можно в Google Play.</p>
+              </div>
+              <a class="button" href="https://github.com/bedrockbender/loneti-smile-collector/releases/latest/download/Loneti-Smile-Collector.apk">Скачать APK для Android</a>
+            </div>
+            <ol>
+              <li><strong>Скачайте и откройте APK.</strong> Найдите файл <code>Loneti-Smile-Collector.apk</code> в загрузках и нажмите на него.</li>
+              <li><strong>Установите приложение.</strong> Если Android запросит разрешение на установку неизвестных приложений, откройте настройки из этого окна. Разрешите установку для браузера или файлового менеджера, в котором вы открыли APK. Вернитесь и нажмите <strong>«Установить»</strong>. После установки разрешение можно отключить. <a href="https://support.google.com/pixelphone/answer/7391672?hl=ru">Инструкция Google</a>.</li>
+              <li><strong>Откройте «Коллекцию смайлов».</strong> Войдите в LONETI прямо в приложении. Нажмите на смайл в комментарии или чате и выберите <strong>«Добавить в „Мои смайлы“»</strong>. Найти его можно через <strong>⋮ → Мои смайлы</strong>.</li>
+            </ol>
+            <a href="#desktop-setup">Установка скрипта для браузера на компьютере</a>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -153,12 +190,12 @@
         <section class="guide-section" id="collect">
           <div data-locale="en-US">
             <h2>Collect a Smile</h2>
-            <p>On a drawing comment or in a drawing-room chat, hover over a Smile to see its outline and click it. With a keyboard, use <kbd>Tab</kbd> to focus the Smile and <kbd>Enter</kbd> to open its preview.</p>
+            <p>Tap a Smile in a drawing comment or room chat to open its preview. With a mouse, hover to see its outline and click it. With a keyboard, use <kbd>Tab</kbd> to focus the Smile and <kbd>Enter</kbd> to open it.</p>
             <p>Choose <strong>Add to my Smiles</strong> to save it to your account. Use <strong>Cancel</strong> or press <kbd>Esc</kbd> to close the preview. Collection requires the original 300 × 300 PNG so the script can check its copying preference. The userscript follows LONETI’s language.</p>
           </div>
           <div data-locale="ru-RU" lang="ru-RU" hidden>
             <h2>Сохранение смайлов</h2>
-            <p>В комментарии к рисунку или в чате комнаты наведите указатель на смайл, чтобы увидеть рамку, и щёлкните по нему. С клавиатуры выберите смайл клавишей <kbd>Tab</kbd> и откройте предпросмотр клавишей <kbd>Enter</kbd>.</p>
+            <p>Коснитесь смайла в комментарии к рисунку или в чате комнаты, чтобы открыть предпросмотр. На компьютере наведите указатель на смайл и щёлкните по нему. С клавиатуры выберите смайл клавишей <kbd>Tab</kbd> и нажмите <kbd>Enter</kbd>.</p>
             <p>Нажмите <strong>Добавить в «Мои смайлы»</strong>, чтобы сохранить смайл в свой аккаунт. Чтобы закрыть предпросмотр, нажмите <strong>«Отмена»</strong> или клавишу <kbd>Esc</kbd>. Для сохранения нужен исходный PNG размером 300 × 300, чтобы скрипт мог проверить защиту от копирования. Язык скрипта совпадает с языком LONETI.</p>
           </div>
         </section>
@@ -168,13 +205,13 @@
             <h2>Organize your library</h2>
             <p>On <strong>My emotes</strong>, choose <strong>New pack</strong> and name it. Smiles begin in <strong>Unsorted</strong>. Use the menu below each Smile to move it to a pack, and choose <strong>Rename</strong> to edit a pack name.</p>
             <p>Expand pack headings in your library or in the Smile picker for comments and rooms. Inside a pack, the newest library entries appear first. Click a Smile in the picker to use it as usual.</p>
-            <p class="note">LONETI stores your images in your account. Pack names and assignments stay in this browser for your account and LONETI domain. Export a pack to bring the grouping to another browser.</p>
+            <p class="note">LONETI stores the Smiles in your account. Your app or browser remembers which pack each Smile belongs to. To bring a named pack to another device, download its <code>.lesp</code> file and install it there.</p>
           </div>
           <div data-locale="ru-RU" lang="ru-RU" hidden>
             <h2>Организация библиотеки</h2>
             <p>На странице <strong>«Мои смайлы»</strong> нажмите <strong>«Новый набор»</strong> и назовите набор. Смайлы без набора находятся в разделе <strong>«Без набора»</strong>. Выберите набор в меню под нужным смайлом. Чтобы изменить название набора, нажмите <strong>«Переименовать»</strong>.</p>
             <p>Наборы раскрываются по нажатию на заголовок в библиотеке и в меню выбора смайлов в комментариях и чатах комнат. Новые записи библиотеки отображаются первыми. Нажмите на смайл в меню, чтобы использовать его как обычно.</p>
-            <p class="note">Изображения хранятся в аккаунте LONETI. Названия наборов и распределение смайлов сохраняются в этом браузере для вашего аккаунта и домена LONETI. Чтобы перенести набор в другой браузер, скачайте его.</p>
+            <p class="note">Сами смайлы хранятся в аккаунте LONETI. Приложение или браузер запоминает, в какой набор вы положили каждый смайл. Чтобы перенести набор на другое устройство, скачайте файл <code>.lesp</code> и установите его там.</p>
           </div>
         </section>
 

@@ -149,6 +149,50 @@ a:hover { text-decoration-thickness: 2px; }
   font-size: 1.1rem;
 }
 
+.android-discovery {
+  display: inline-block;
+  margin-top: .5rem;
+  font-weight: 700;
+}
+
+.is-android .android-discovery { display: none; }
+
+#desktop-setup, .android-setup { scroll-margin-top: .8rem; }
+
+.android-setup {
+  margin-block: 1rem;
+  padding: .95rem;
+  border: 1px solid #cdd9cd;
+  border-radius: .32rem;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.is-android .android-setup { border-color: #9cbe9f; }
+
+.android-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .7rem 1rem;
+}
+
+.android-header h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 4vw, 1.7rem);
+  line-height: 1.2;
+}
+
+.android-setup p { font-size: 1rem; }
+
+.android-setup ol {
+  margin: .85rem 0 .5rem;
+  padding-inline-start: 1.45rem;
+}
+
+.android-setup li + li { margin-top: .4rem; }
+
 .install-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -16,7 +16,16 @@
     return null;
   }
 
-  const browser = desktopBrowser(navigator.userAgent || '');
+  const agent = navigator.userAgent || '';
+  const isAndroid = /Android/i.test(agent) || navigator.userAgentData?.platform === 'Android';
+  if (isAndroid) {
+    const desktopSetup = document.querySelector('#desktop-setup');
+    const androidSetup = document.querySelector('#android-setup');
+    desktopSetup.before(androidSetup);
+    document.documentElement.classList.add('is-android');
+  }
+
+  const browser = isAndroid ? null : desktopBrowser(agent);
   if (browser) {
     const stores = {
       chrome: 'https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo',
