@@ -35,7 +35,7 @@ final class SmokeSite extends WebViewClient {
         this.production = production;
         assets.put("fixture", png(300, Color.RED));
         assets.put("comment", png(300, Color.GREEN));
-        assets.put("wall", png(300, Color.BLUE));
+        assets.put("wall", png(300, Color.MAGENTA));
         assets.put("reply", png(300, Color.YELLOW));
         items.put("101", "fixture");
     }
