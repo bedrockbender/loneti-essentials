@@ -18,6 +18,7 @@ import android.webkit.WebView;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -112,13 +113,13 @@ public final class SmokeTest extends Instrumentation {
         click("Cancel");
         require(fixtureSite[0].saveCount() == 0, "Cancel sent a save");
         click("Add this Smile to My emotes");
-        click("Add to my Smiles");
+        clickWebDialogButton(fixtureWeb[0], "Add to my Smiles");
         awaitText("Added to My emotes");
         click("Close");
         require(fixtureSite[0].saveCount() == 1, "Collector did not save exactly once");
         click("Open already-owned Smile");
         click("Add this Smile to My emotes");
-        click("Add to my Smiles");
+        clickWebDialogButton(fixtureWeb[0], "Add to my Smiles");
         awaitText("Already added");
         awaitText("This Smile is already in Unsorted.");
         click("Close");
@@ -129,7 +130,7 @@ public final class SmokeTest extends Instrumentation {
         Uri fixture = PackFixture.putInDownloads(context);
         try {
             openPack(PackFixture.FILE_NAME);
-            click("Preview pack");
+            clickWebDialogButton(fixtureWeb[0], "Preview pack");
             awaitText(PackFixture.NAME);
             click("Install pack");
             awaitText("Added: 1. Already in My emotes: 0.");
@@ -148,7 +149,7 @@ public final class SmokeTest extends Instrumentation {
             click("Close");
 
             openPack(PackFixture.NAME + ".lesp");
-            click("Preview pack");
+            clickWebDialogButton(fixtureWeb[0], "Preview pack");
             awaitText(PackFixture.NAME);
             click("Cancel");
             require(fixtureSite[0].saveCount() == 2, "Pack export and preview must not save a Smile");
@@ -270,6 +271,15 @@ public final class SmokeTest extends Instrumentation {
             SystemClock.sleep(150);
         }
         throw new AssertionError("Could not verify " + description + "; visible: " + visibleLabels());
+    }
+
+    private void clickWebDialogButton(WebView web, String label) throws InterruptedException {
+        // The dialog is visible before the WebView finishes reading an image or pack header.
+        awaitJs(web, "(()=>{for(const host of document.body.children){"
+                + "const dialog=host.shadowRoot?.querySelector('dialog[open]');if(!dialog)continue;"
+                + "const button=[...dialog.querySelectorAll('button:not([hidden]):enabled')]"
+                + ".find(button=>button.textContent.trim()===" + JSONObject.quote(label) + ");"
+                + "if(button){button.click();return true;}}return false;})()", "the ready " + label + " button");
     }
 
     private void awaitWebViewFeatures(WebView web) throws InterruptedException {
