@@ -1,1 +1,5 @@
 /Dumped/
+/android/build/
+*.p12
+*.jks
+*.dpapi

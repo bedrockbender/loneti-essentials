@@ -4,7 +4,7 @@
 // @name:ru-RU   Коллекция смайлов LONETI
 // @name:ru      Коллекция смайлов LONETI
 // @namespace    loneti-smile-collector
-// @version      2.2.0
+// @version      2.2.1
 // @homepageURL  https://bedrockbender.github.io/loneti-smile-collector/
 // @downloadURL  https://bedrockbender.github.io/loneti-smile-collector/loneti-smile-collector.user.js
 // @updateURL    https://bedrockbender.github.io/loneti-smile-collector/loneti-smile-collector.user.js
@@ -89,6 +89,8 @@
     "Leave the password blank for an open pack.": "Чтобы сохранить набор без пароля, оставьте поле пустым.",
     "Could not prepare this pack. {reason}": "Не удалось подготовить этот набор. {reason}",
     "Could not download this pack.": "Не удалось скачать этот набор.",
+    "Android save cancelled.": "Сохранение в Android отменено.",
+    "Android is already saving a pack. Finish or cancel that save first.": "Android уже сохраняет набор. Завершите или отмените это сохранение.",
     "The passwords do not match.": "Пароли не совпадают.",
     "Smiles": "Смайлы",
     "{count} Smile downloaded.": "Скачан {count} смайл.",
@@ -769,18 +771,29 @@
       ui.setBusy(true);
       try {
         const blob = await writePack(packName, images, password.value);
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = (name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').replace(/[. ]+$/, '') || t('Smiles')) + '.lesp';
-        document.body.append(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(link.href), 60000);
+        const filename = (name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').replace(/[. ]+$/, '') || t('Smiles')) + '.lesp';
+        if (typeof saveAndroidSmilePack === 'function') {
+          await saveAndroidSmilePack(blob, filename);
+        } else {
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = filename;
+          document.body.append(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(link.href), 60000);
+        }
         ui.setBusy(false);
         ui.done(t(images.length === 1 ? '{count} Smile downloaded.' : '{count} Smiles downloaded.', { count: images.length }));
       } catch (error) {
         ui.setBusy(false);
-        ui.status.textContent = displayError(error, 'Could not download this pack.');
+        if (error?.androidPackExportStatus === 'cancelled') {
+          ui.status.textContent = t('Android save cancelled.');
+        } else if (error?.androidPackExportStatus === 'busy') {
+          ui.status.textContent = t('Android is already saving a pack. Finish or cancel that save first.');
+        } else {
+          ui.status.textContent = displayError(error, 'Could not download this pack.');
+        }
       }
     });
   }

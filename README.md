@@ -2,6 +2,14 @@
 
 Collect a Smile from a drawing comment or drawing-room chat, organize your library into packs, and share a whole pack with a friend. Each person uses their own signed-in LONETI account.
 
+## Install on Android
+
+1. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-smile-collector/#android-setup) on a phone or tablet running Android 8.0 or newer. Tap **Download Android APK** and open the file.
+2. If Android asks, allow the browser or Files app that opened the download to **Install unknown apps**. Return to the installer and tap **Install**.
+3. Open **Smile Collector** and sign in to LONETI. Tap a Smile in a comment or drawing room to preview it. Tap **Add to my Smiles** to keep it. The **⋮** menu opens **My emotes**.
+
+The app uses Android System WebView and has its own LONETI sign-in session. Keep WebView up to date. Use **Download pack** and **Install pack** in My emotes to move a named pack between the app and your browser. Android opens its Files picker to choose where to save or which file to install.
+
 ## Install with Tampermonkey
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser. In Chrome, type `chrome://extensions` into a new tab. Find the Tampermonkey card, click **Details**, and turn on **Allow User Scripts**. In Edge, start at `edge://extensions`. If the switch is missing, enable **Developer mode** on the browser’s extensions list. Firefox users can go straight to step 2. [Tampermonkey permissions guide](https://www.tampermonkey.net/faq.php?locale=en&q=Q209)
@@ -29,3 +37,9 @@ Installing into a named pack merges with a pack of the same name. Matching artwo
 - **When collecting**, click a Smile in a comment or room, review the preview, and choose **Add to my Smiles**. The script checks the original 300×300 PNG. If only the thumbnail is available, collection is disabled because resizing can erase the preference.
 
 The preference is a small mark in the least significant bits of the PNG pixels. This collector honors it when collecting, exporting, and installing. A pack download excludes protected Smiles and shows how many were skipped. Other software can still save or screenshot a visible image, and image processing can remove the mark. Password encryption protects the pack file until someone unlocks it. An authorized recipient can share the unlocked artwork.
+
+## Build the Android release
+
+On the project's Windows build machine, run `./android/build.ps1` in PowerShell. The script uses JDK 21, Android SDK Platform 35, and Build-Tools 35.0.1. You can pass `-JavaHome`, `-AndroidSdk`, and `-SigningDirectory` to select other local installations. It verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-Smile-Collector.apk`.
+
+The release key is held outside Git in the publishing Windows account. Android updates must use the same signing key. A separate build needs its own PKCS12 keystore named `release.p12`, alias `release`, and a matching password saved as `release-password.dpapi` with PowerShell’s `ConvertFrom-SecureString` under the Windows account that will build it.
