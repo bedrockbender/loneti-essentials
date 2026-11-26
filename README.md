@@ -2,9 +2,13 @@
 
 Draw on LONETI with polygon and color selections and editable gradients. Collect Smiles from comments and rooms and share them with friends as packs. The Android app and Tampermonkey userscript include the same tools.
 
+[Install Loneti essentials](https://bedrockbender.github.io/loneti-essentials/) · [Android releases](https://github.com/bedrockbender/loneti-essentials/releases) · [Report a bug](https://github.com/bedrockbender/loneti-essentials/issues/new)
+
+Loneti essentials is an independent project for LONETI. Its original code and documentation are available under the [MIT license](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md) for dependencies, icons, and screenshot artwork. See [SECURITY.md](SECURITY.md) for private vulnerability reports.
+
 ## Install on Android
 
-1. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-smile-collector/#android-setup) on a phone or tablet running Android 8.0 or newer. Tap **Download for Android** and open the file.
+1. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-essentials/#android-setup) on a phone or tablet running Android 8.0 or newer. Tap **Download for Android** and open the file.
 2. If Android asks, allow the browser or Files app that opened the download to **Install unknown apps**. Return to the installer and tap **Install**.
 3. Open **Loneti essentials** and sign in to LONETI. Tap a Smile in a comment or drawing room to preview it. Tap **Add to my Smiles** to keep it. Installing over the earlier Smile Collector APK preserves your app data.
 
@@ -13,7 +17,7 @@ The app uses Android System WebView and has its own LONETI sign-in session. Keep
 ## Install with Tampermonkey
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser. In Chrome, type `chrome://extensions` into a new tab. Find the Tampermonkey card, click **Details**, and turn on **Allow User Scripts**. In Edge, start at `edge://extensions`. If the switch is missing, enable **Developer mode** on the browser’s extensions list. Firefox users can go straight to step 2. [Tampermonkey permissions guide](https://www.tampermonkey.net/faq.php?locale=en&q=Q209)
-2. Choose **I'm a PC user** on the [installation page](https://bedrockbender.github.io/loneti-smile-collector/) to open **Use the browser userscript**. Choose **Install the userscript** and confirm in Tampermonkey. If the drawing tools miss the editor at startup, choose **UserScripts API Dynamic** under **Content Script API** in the Tampermonkey dashboard settings, then reload the drawing. [Tampermonkey startup modes](https://www.tampermonkey.net/documentation.php?q=content_script_api)
+2. Choose **I'm a PC user** on the [installation page](https://bedrockbender.github.io/loneti-essentials/) to open **Use the browser userscript**. Choose **Install the userscript** and confirm in Tampermonkey. If the drawing tools miss the editor at startup, choose **UserScripts API Dynamic** under **Content Script API** in the Tampermonkey dashboard settings, then reload the drawing. [Tampermonkey startup modes](https://www.tampermonkey.net/documentation.php?q=content_script_api)
 3. Reload your LONETI drawing or room. Hover over a Smile to see its outline, then click it. You can also use **Tab** to focus it and **Enter** to open the preview. Choose **Cancel** or press **Esc** to leave the preview without saving.
 
 The userscript follows LONETI’s page language automatically. The installation guide starts in your browser’s preferred supported language and remembers your choice of **EN** or **Русский**.
@@ -49,12 +53,25 @@ Collecting, saving a Smile from its editor, and installing a pack check the acco
 
 The preference is a small mark in the least significant bits of the PNG pixels. This collector honors it when collecting, exporting, and installing. A pack download excludes protected Smiles and shows how many were skipped. Other software can still save or screenshot a visible image, and image processing can remove the mark. Password encryption protects the pack file until someone unlocks it. An authorized recipient can share the unlocked artwork.
 
-## Build the Android release
+## Build and verify from source
 
-After editing the drawing-tool sources under `editor/`, run `node editor/bundle.mjs` to rebuild the self-contained userscript. Use `node editor/bundle.mjs --check` to verify it is current. The original userscript installation URL and namespace are retained for existing installations.
+The userscript is `loneti-smile-collector.user.js`. After editing the drawing-tool sources under `editor/`, run `node editor/bundle.mjs` to rebuild it. Run `node editor/bundle.mjs --check` to verify the bundle. Version 3.1.2 directs updates to the new site. Existing installs can receive it at the original URL and keep the same userscript identity.
 
-Run `node --test editor/pixels.test.mjs` for mask geometry and tolerance checks. With Node 22+, Chromium, and the saved reference editors available locally, `node tests/editor-ui.mjs` exercises the tool palette in the four drawing modes. Run `node tests/room-sync.mjs` to relay a full-canvas gradient between two local room editors and verify pixel equality, Undo, Redo, and rejection when the packet cannot fit.
+Run `node --test editor/pixels.test.mjs` for mask geometry and tolerance checks. With Node 22+, Chromium, and locally saved reference editors, `node tests/editor-ui.mjs` exercises the tool palette in the four drawing modes. `node tests/room-sync.mjs` verifies gradient replay, Undo, Redo, and rejection when a room update exceeds the size limit. The browser integration tests skip when their local fixtures are unavailable. They accept a fixture folder via `LONETI_FIXTURES`; keep saved LONETI pages outside Git.
 
-On the project's Windows build machine, run `./android/build.ps1` in PowerShell. The script uses JDK 21, Android SDK Platform 35, and Build-Tools 35.0.1. You can pass `-JavaHome`, `-AndroidSdk`, and `-SigningDirectory` to select other local installations. It verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-essentials.apk`.
+To build Android on Windows, install JDK 21, Android SDK Platform 35, and Build-Tools 35.0.1. Set `JAVA_HOME` and `ANDROID_SDK_ROOT` or pass `-JavaHome` and `-AndroidSdk`. The build fetches hash-checked AndroidX dependencies from Google's Maven repository.
 
-The release key is held outside Git in the publishing Windows account. Android updates must use the same signing key. A separate build needs its own PKCS12 keystore named `release.p12`, alias `release`, and a matching password saved as `release-password.dpapi` with PowerShell’s `ConvertFrom-SecureString` under the Windows account that will build it.
+Create your own local signing key once. Run the following in PowerShell with `keytool` from your JDK on `PATH`. Enter the same new password in both prompts.
+
+```powershell
+$signingDir = Join-Path $env:LOCALAPPDATA 'LonetiEssentials/dev-signing'
+New-Item -ItemType Directory -Force -Path $signingDir | Out-Null
+keytool -genkeypair -keystore (Join-Path $signingDir 'release.p12') -storetype PKCS12 -alias release -keyalg RSA -keysize 3072 -validity 3650 -dname 'CN=Loneti essentials development'
+Read-Host 'Keystore password' -AsSecureString | ConvertFrom-SecureString |
+    Set-Content -LiteralPath (Join-Path $signingDir 'release-password.dpapi')
+./android/build.ps1 -SigningDirectory $signingDir
+```
+
+The build verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-essentials.apk`. Android requires matching signing keys for an in-place update. Use a spare device or emulator to try a locally signed build if the official app is already installed.
+
+The [Android 2.1.1 tag](https://github.com/bedrockbender/loneti-essentials/tree/android-v2.1.1) points to the source of the signed Android APK. The same signed download is available from both repositories.

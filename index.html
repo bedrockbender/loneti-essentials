@@ -7,7 +7,13 @@
   <meta name="theme-color" content="#151715">
   <title>Loneti essentials</title>
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
-  <link rel="stylesheet" href="./site.css?v=pack-preview">
+  <link rel="canonical" href="https://bedrockbender.github.io/loneti-essentials/">
+  <link rel="stylesheet" href="./site.css?v=source-links">
+  <script>
+    if (location.hostname === 'bedrockbender.github.io' && /^\/loneti-smile-collector(?:\/index\.html|\/)?$/.test(location.pathname)) {
+      location.replace('/loneti-essentials/' + location.search + location.hash);
+    }
+  </script>
   <script defer src="./site.js?v=browser-guide"></script>
 </head>
 <body id="top">
@@ -28,16 +34,18 @@
         <div data-locale="en-US">
           <p class="intro">Draw on LONETI with selection and gradient tools. Save Smiles from comments and rooms and share them as packs.</p>
           <div class="hero-actions">
-            <a class="button button-primary" href="https://github.com/bedrockbender/loneti-smile-collector/releases/latest/download/Loneti-essentials.apk">Download for Android</a>
+            <a class="button button-primary" href="https://github.com/bedrockbender/loneti-essentials/releases/latest/download/Loneti-essentials.apk">Download for Android</a>
             <a class="button button-secondary" href="#browser">I'm a PC user</a>
+            <a class="button button-source" href="https://github.com/bedrockbender/loneti-essentials"><img src="./icons/github.svg" width="18" height="18" alt="">Source code</a>
           </div>
           <p class="platform">APK for Android 8.0 and newer</p>
         </div>
         <div data-locale="ru-RU" lang="ru-RU" hidden>
           <p class="intro">Рисуйте на LONETI с помощью выделения и градиентов. Сохраняйте смайлы из комментариев и чатов и делитесь наборами.</p>
           <div class="hero-actions">
-            <a class="button button-primary" href="https://github.com/bedrockbender/loneti-smile-collector/releases/latest/download/Loneti-essentials.apk">Скачать для Android</a>
+            <a class="button button-primary" href="https://github.com/bedrockbender/loneti-essentials/releases/latest/download/Loneti-essentials.apk">Скачать для Android</a>
             <a class="button button-secondary" href="#browser">Я сижу с компа!</a>
+            <a class="button button-source" href="https://github.com/bedrockbender/loneti-essentials"><img src="./icons/github.svg" width="18" height="18" alt="">Исходный код</a>
           </div>
           <p class="platform">APK для Android 8.0 и новее</p>
         </div>

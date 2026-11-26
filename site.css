@@ -127,6 +127,16 @@ a:hover { text-decoration-thickness: .12em; }
 }
 .button-secondary:hover { background: #35402e; }
 
+.button-source {
+  gap: .5rem;
+  border-color: #51584e;
+  background: #101210;
+  color: #f2f3ed;
+  white-space: nowrap;
+}
+.button-source:hover { background: #262a25; }
+.button-source img { filter: invert(1); }
+
 .hero-actions {
   display: flex;
   flex-wrap: wrap;

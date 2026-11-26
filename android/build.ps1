@@ -79,6 +79,7 @@ $sourceRoot = Join-Path $PSScriptRoot 'src'
 $resources = Join-Path $PSScriptRoot 'res'
 $collector = Join-Path (Split-Path $PSScriptRoot -Parent) 'loneti-smile-collector.user.js'
 $packExport = Join-Path $PSScriptRoot 'assets/pack-export.js'
+$projectLicense = Join-Path (Split-Path $PSScriptRoot -Parent) 'LICENSE'
 $thirdPartyLicenses = Join-Path $PSScriptRoot 'licenses'
 $outputRoot = Join-Path $PSScriptRoot 'build'
 $outputApk = Join-Path $outputRoot 'Loneti-essentials.apk'
@@ -113,6 +114,7 @@ try {
 
     Copy-Item -LiteralPath $packExport -Destination $assets
     Copy-Item -LiteralPath $collector -Destination (Join-Path $assets 'collector.user.js')
+    Copy-Item -LiteralPath $projectLicense -Destination (Join-Path $assets 'loneti-essentials-license.txt')
     foreach ($name in @('androidx-apache-2.0.txt', 'chromium-bsd.txt')) {
         Copy-Item -LiteralPath (Join-Path $thirdPartyLicenses $name) -Destination $assets
     }
@@ -155,7 +157,7 @@ try {
 
     Invoke-BuildTool $zipalign @('-P', '16', '-f', '4', $unsignedApk, $alignedApk)
 
-    $signingPassword = Get-Content -LiteralPath $protectedPassword -Raw | ConvertTo-SecureString
+    $signingPassword = (Get-Content -LiteralPath $protectedPassword -Raw).Trim() | ConvertTo-SecureString
     $passwordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($signingPassword)
     $priorPassword = $env:LONETI_APK_STORE_PASSWORD
     try {

@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         Loneti essentials
 // @namespace    loneti-smile-collector
-// @version      3.1.1
-// @homepageURL  https://bedrockbender.github.io/loneti-smile-collector/
-// @downloadURL  https://bedrockbender.github.io/loneti-smile-collector/loneti-smile-collector.user.js
-// @updateURL    https://bedrockbender.github.io/loneti-smile-collector/loneti-smile-collector.user.js
-// @icon         https://bedrockbender.github.io/loneti-smile-collector/icon.svg
+// @version      3.1.2
+// @homepageURL  https://bedrockbender.github.io/loneti-essentials/
+// @downloadURL  https://bedrockbender.github.io/loneti-essentials/loneti-smile-collector.user.js
+// @updateURL    https://bedrockbender.github.io/loneti-essentials/loneti-smile-collector.user.js
+// @icon         https://bedrockbender.github.io/loneti-essentials/icon.svg
+// @supportURL   https://github.com/bedrockbender/loneti-essentials/issues
+// @license      MIT
 // @description  Draw with polygon and color selections and custom gradients. Collect Smiles and share named packs.
 // @description:ru Собирайте смайлы и делитесь наборами. Рисуйте с помощью выделения по многоугольнику и цвету и собственных градиентов.
 // @match        https://loneti.art/draw*
@@ -21,6 +23,29 @@
 // @sandbox      raw
 // @run-at       document-start
 // ==/UserScript==
+
+/*
+MIT License
+Copyright (c) 2026 bedrockbender and Loneti essentials contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
 
 // BEGIN bundled drawing tools
 (() => {
