@@ -268,6 +268,27 @@ strong { color: #f2f3ed; }
 .guide-section p { max-inline-size: 68ch; }
 .guide-section ul { max-inline-size: 70ch; padding-inline-start: 1.15rem; }
 
+.guide-shot {
+  max-inline-size: 48rem;
+  margin: 1rem 0 1.4rem;
+}
+.guide-shot a {
+  display: block;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  border: 1px solid var(--line);
+  border-radius: .45rem;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+#collect .guide-shot a { max-inline-size: min(100%, 25rem); }
+.guide-shot figcaption {
+  max-inline-size: 65ch;
+  margin-block-start: .45rem;
+  color: var(--muted);
+  font-size: .94rem;
+}
+
 .steps, .tool-list {
   display: grid;
   grid-template-columns: 1fr;
