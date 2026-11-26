@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Loneti essentials
 // @namespace    loneti-smile-collector
-// @version      3.3.0
+// @version      3.3.1
 // @homepageURL  https://bedrockbender.github.io/loneti-essentials/
 // @downloadURL  https://bedrockbender.github.io/loneti-essentials/loneti-smile-collector.user.js
 // @updateURL    https://bedrockbender.github.io/loneti-essentials/loneti-smile-collector.user.js
@@ -2066,6 +2066,7 @@ else startDrawingTools();
     "This pack has no shareable Smiles.": "В этом наборе нет смайлов, доступных для копирования.",
     "Available to share: {count}.": "Доступно для копирования: {count}.",
     "Protected Smiles excluded: {count}.": "Исключено защищённых смайлов: {count}.",
+    "Share other artists’ Smiles only with permission from the rights holder.": "Делитесь чужими смайлами только с разрешения правообладателя.",
     "Leave the password blank for an open pack.": "Чтобы сохранить набор без пароля, оставьте поле пустым.",
     "Could not prepare this pack. {reason}": "Не удалось подготовить этот набор. {reason}",
     "Could not download this pack.": "Не удалось скачать этот набор.",
@@ -2831,6 +2832,9 @@ else startDrawingTools();
     const password = ui.input(t('Password (optional)'), 'password');
     const repeat = ui.input(t('Confirm password'), 'password');
     password.autocomplete = repeat.autocomplete = 'new-password';
+    const permission = document.createElement('p');
+    permission.textContent = t('Share other artists’ Smiles only with permission from the rights holder.');
+    ui.fields.append(permission);
     const images = [];
     let skipped = 0;
     try {

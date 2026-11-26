@@ -327,6 +327,7 @@ public final class SmokeTest extends Instrumentation {
     private void exportPack() {
         click(PackFixture.NAME + " (1)");
         clickLast("Download pack");
+        awaitText("Share other artists’ Smiles only with permission from the rights holder.");
         click("Download .lesp");
     }
 
