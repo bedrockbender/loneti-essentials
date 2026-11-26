@@ -53,7 +53,7 @@ The preference is a small mark in the least significant bits of the PNG pixels. 
 
 After editing the drawing-tool sources under `editor/`, run `node editor/bundle.mjs` to rebuild the self-contained userscript. Use `node editor/bundle.mjs --check` to verify it is current. The original userscript installation URL and namespace are retained for existing installations.
 
-Run `node --test editor/pixels.test.mjs` for mask geometry and tolerance checks. With Node 22+, local Chromium, and a private reference dump available locally, `node tests/editor-ui.mjs` also exercises the native Smile and avatar editors.
+Run `node --test editor/pixels.test.mjs` for mask geometry and tolerance checks. With Node 22+, Chromium, and the saved reference editors available locally, `node tests/editor-ui.mjs` exercises the native Smile and avatar interfaces. Run `node tests/room-sync.mjs` to relay a full-canvas gradient between two local room editors and verify pixel equality, Undo, Redo, and rejection when the packet cannot fit.
 
 On the project's Windows build machine, run `./android/build.ps1` in PowerShell. The script uses JDK 21, Android SDK Platform 35, and Build-Tools 35.0.1. You can pass `-JavaHome`, `-AndroidSdk`, and `-SigningDirectory` to select other local installations. It verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-essentials.apk`.
 

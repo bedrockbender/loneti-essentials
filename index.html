@@ -3,49 +3,71 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Install LONETI Smile Collector to collect Smiles, organize your library, and share packs.">
-  <title>LONETI Smile Collector</title>
+  <meta name="description" content="Download Loneti essentials for Android. Draw, collect LONETI Smiles, and share packs with friends.">
+  <meta name="theme-color" content="#151715">
+  <title>Loneti essentials</title>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
   <link rel="stylesheet" href="./site.css">
   <script defer src="./site.js"></script>
 </head>
-<body>
+<body id="top">
   <header class="site-header">
     <div class="frame header-inner">
-      <a class="brand" href="#top">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span>LONETI <span class="brand-detail">Smile Collector</span></span>
-      </a>
+      <a class="brand" href="#top"><img src="./icon.svg" width="36" height="36" alt="">Loneti essentials</a>
       <div class="language" role="group" data-language-options aria-label="Language" hidden>
-        <button type="button" data-language="en-US" lang="en-US" aria-pressed="true">EN</button>
-        <button type="button" data-language="ru-RU" lang="ru-RU" aria-pressed="false">Русский</button>
+        <button type="button" data-language="en-US" lang="en-US" aria-label="English" aria-pressed="true">EN</button>
+        <button type="button" data-language="ru-RU" lang="ru-RU" aria-label="Русский" aria-pressed="false">RU</button>
       </div>
     </div>
   </header>
 
-  <main id="top">
-    <section class="hero" id="setup">
-      <div class="frame">
-        <div class="hero-grid">
-          <div class="hero-copy" data-locale="en-US">
-            <h1>Install <em>Smile Collector</em></h1>
-            <p>Collect Smiles on LONETI, organize them into packs, and share your packs with friends.</p>
-            <a class="android-discovery" href="#android-setup">Get the Android app</a>
-          </div>
-          <div class="hero-copy" data-locale="ru-RU" lang="ru-RU" hidden>
-            <h1>Установка <em>Smile Collector</em></h1>
-            <p>Сохраняйте смайлы на LONETI, собирайте их в наборы и делитесь наборами с друзьями.</p>
-            <a class="android-discovery" href="#android-setup">Приложение для Android</a>
-          </div>
-          <div class="smile-stack" aria-hidden="true">
-            <span class="smile-card card-back"></span>
-            <span class="smile-card card-middle"></span>
-            <span class="smile-card card-front">
-              <span class="smile-face"></span>
-            </span>
-          </div>
+  <main>
+    <section class="hero frame" aria-labelledby="site-title">
+      <div class="hero-copy">
+        <h1 id="site-title">Loneti essentials</h1>
+        <div data-locale="en-US">
+          <p class="intro">Draw on LONETI with selection and gradient tools. Save Smiles from comments and rooms and share them as packs.</p>
+          <a class="button button-primary" href="https://github.com/bedrockbender/loneti-smile-collector/releases/latest/download/Loneti-essentials.apk">Download for Android</a>
+          <p class="platform">APK for Android 8.0 and newer</p>
         </div>
+        <div data-locale="ru-RU" lang="ru-RU" hidden>
+          <p class="intro">Рисуйте на LONETI с помощью выделения и градиентов. Сохраняйте смайлы из комментариев и чатов и делитесь наборами.</p>
+          <a class="button button-primary" href="https://github.com/bedrockbender/loneti-smile-collector/releases/latest/download/Loneti-essentials.apk">Скачать для Android</a>
+          <p class="platform">APK для Android 8.0 и новее</p>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true"><img src="./icon.svg" width="512" height="512" alt=""></div>
+    </section>
 
-        <div id="desktop-setup">
+    <div class="frame setup" id="setup">
+      <details class="setup-panel" id="android-setup" open>
+        <summary>
+          <span data-locale="en-US">Install the Android app</span>
+          <span data-locale="ru-RU" lang="ru-RU" hidden>Установка приложения на Android</span>
+        </summary>
+        <div class="panel-content" data-locale="en-US">
+          <ol>
+            <li>Open <strong>Loneti-essentials.apk</strong> on your Android device.</li>
+            <li>If Android asks to allow installs from the app that opened the APK, follow the system prompt and return to tap <strong>Install</strong>.</li>
+            <li>Open <strong>Loneti essentials</strong> and sign in to LONETI. To update it later, open the latest APK on the same device.</li>
+          </ol>
+          <p>Use a current version of <strong>Android System WebView</strong>. <a href="https://support.google.com/pixelphone/answer/7391672?hl=en">Android installation help</a>.</p>
+        </div>
+        <div class="panel-content" data-locale="ru-RU" lang="ru-RU" hidden>
+          <ol>
+            <li>Откройте <strong>Loneti-essentials.apk</strong> на устройстве Android.</li>
+            <li>Если Android запросит разрешение на установку из приложения, в котором вы открыли APK, следуйте системной подсказке. Затем вернитесь и нажмите <strong>«Установить»</strong>.</li>
+            <li>Откройте <strong>Loneti essentials</strong> и войдите в LONETI. Чтобы обновить приложение, откройте новый APK на том же устройстве.</li>
+          </ol>
+          <p>Используйте актуальную версию <strong>Android System WebView</strong>. <a href="https://support.google.com/pixelphone/answer/7391672?hl=ru">Справка по установке на Android</a>.</p>
+        </div>
+      </details>
+      <details class="setup-panel" id="browser">
+        <summary>
+          <span data-locale="en-US">Use the browser userscript</span>
+          <span data-locale="ru-RU" lang="ru-RU" hidden>Установка скрипта в браузере</span>
+        </summary>
+        <div class="browser-instructions">
           <div data-locale="en-US">
             <ol class="install-steps" aria-label="Installation steps">
               <li>
@@ -58,7 +80,7 @@
                     <li>In the store, click <strong>Add to Chrome</strong>, then <strong>Add extension</strong>.</li>
                     <li>Open a new tab. Type <code>chrome://extensions</code> in the address bar and press <kbd>Enter</kbd>. You’ll see Chrome’s list of extensions.</li>
                     <li>Find the <strong>Tampermonkey</strong> card. Click <strong>Details</strong> and turn on <strong>Allow User Scripts</strong>.</li>
-                    <li>Come back to this guide and click the green button in step 2.</li>
+                    <li>Come back to this guide and continue with step 2.</li>
                   </ol>
                   <p class="permission-help">Switch missing? Go back to <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q209">See Tampermonkey’s instructions</a>.</p>
                 </details>
@@ -78,9 +100,10 @@
               </li>
               <li>
                 <h2>Add the userscript</h2>
-                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Install LONETI Smile Collector</a>
-                <p>Click the green button above. Tampermonkey will show <strong>LONETI Smile Collector</strong>. Click <strong>Install</strong> on that screen, then return here.</p>
-                <details><summary>I see code instead of an Install button</summary><p>Check that Tampermonkey is enabled in your browser and that you finished step 1. Close the code tab and click the green button again. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Manual installation instructions</a>.</p></details>
+                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Install the userscript</a>
+                <p>Open the userscript link above, choose <strong>Install</strong> in Tampermonkey, and return here.</p>
+                <details><summary>Enable early loading for the drawing tools</summary><p>Open the Tampermonkey menu in your browser toolbar, choose <strong>Dashboard</strong>, then <strong>Settings</strong>. Under <strong>Content Script API</strong>, choose <strong>UserScripts API Dynamic</strong>. If that option is hidden, switch the configuration mode to <strong>Advanced</strong>. Save and reload the drawing tab. This lets the tools start alongside LONETI’s editor. <a href="https://www.tampermonkey.net/documentation.php?q=content_script_api">Tampermonkey’s guide</a>.</p></details>
+                <details><summary>I see code instead of an Install button</summary><p>Check that Tampermonkey is enabled in your browser and that you finished step 1. Close the code tab and open the userscript link again. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Manual installation instructions</a>.</p></details>
               </li>
               <li>
                 <h2>Try your first Smile</h2>
@@ -102,7 +125,7 @@
                     <li>В магазине нажмите <strong>«Установить»</strong>, затем <strong>«Установить расширение»</strong>.</li>
                     <li>Откройте новую вкладку. Введите <code>chrome://extensions</code> в адресную строку и нажмите <kbd>Enter</kbd>. Откроется список расширений самого Chrome.</li>
                     <li>Найдите карточку <strong>Tampermonkey</strong>. Нажмите <strong>«Сведения»</strong> и включите <strong>«Разрешить пользовательские скрипты»</strong>.</li>
-                    <li>Вернитесь на эту страницу и нажмите зелёную кнопку в шаге 2.</li>
+                    <li>Вернитесь на эту страницу и откройте ссылку установки скрипта в шаге 2.</li>
                   </ol>
                   <p class="permission-help">Нет такого переключателя? Вернитесь на <code>chrome://extensions</code> и включите <strong>«Режим разработчика»</strong>. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q209">Инструкция Tampermonkey</a>.</p>
                 </details>
@@ -122,9 +145,10 @@
               </li>
               <li>
                 <h2>Добавьте скрипт</h2>
-                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Установить LONETI Smile Collector</a>
-                <p>Нажмите зелёную кнопку выше. В открывшемся окне Tampermonkey нажмите <strong>«Установить»</strong> и вернитесь на эту страницу.</p>
-                <details><summary>Вместо кнопки «Установить» вижу код</summary><p>Проверьте, что Tampermonkey включён в браузере и вы выполнили шаг 1. Закройте вкладку с кодом и ещё раз нажмите зелёную кнопку. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Как установить скрипт вручную</a>.</p></details>
+                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Установить скрипт</a>
+                <p>Откройте ссылку выше, нажмите <strong>«Установить»</strong> в окне Tampermonkey и вернитесь на эту страницу.</p>
+                <details><summary>Включить ранний запуск инструментов рисования</summary><p>Нажмите значок Tampermonkey на панели браузера, выберите <strong>«Панель управления»</strong> и откройте вкладку <strong>«Настройки»</strong>. В пункте <strong>Content Script API</strong> выберите <strong>UserScripts API Dynamic</strong>. Если этого пункта не видно, переключите режим настроек на расширенный. Сохраните изменения и обновите вкладку с рисунком. <a href="https://www.tampermonkey.net/documentation.php?locale=ru&amp;q=content_script_api">Справка Tampermonkey</a>.</p></details>
+                <details><summary>Вместо кнопки «Установить» вижу код</summary><p>Проверьте, что Tampermonkey включён в браузере и вы выполнили шаг 1. Закройте вкладку с кодом и ещё раз откройте ссылку установки скрипта. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Как установить скрипт вручную</a>.</p></details>
               </li>
               <li>
                 <h2>Попробуйте сохранить смайл</h2>
@@ -134,52 +158,19 @@
             </ol>
           </div>
         </div>
-
-        <section class="android-setup" id="android-setup">
-          <div data-locale="en-US">
-            <div class="android-header">
-              <div>
-                <h2>Install on Android</h2>
-                <p>For phones and tablets running Android 8.0 or newer. Keep Android System WebView up to date in the Play Store.</p>
-              </div>
-              <a class="button" href="https://github.com/bedrockbender/loneti-smile-collector/releases/latest/download/Loneti-Smile-Collector.apk">Download Android APK</a>
-            </div>
-            <ol>
-              <li><strong>Download and open the APK.</strong> Find <code>Loneti-Smile-Collector.apk</code> in your downloads and tap it.</li>
-              <li><strong>Install the app.</strong> If Android asks to install unknown apps, open the prompt’s settings and allow installs from the browser or files app that opened the APK. Return and tap <strong>Install</strong>. You can turn the permission off afterward. <a href="https://support.google.com/pixelphone/answer/7391672?hl=en">Google’s installation help</a>.</li>
-              <li><strong>Open Smile Collector.</strong> Sign in to LONETI inside the app. Tap a Smile in a comment or room, then tap <strong>Add to my Smiles</strong>. You can find it under <strong>⋮ → My emotes</strong>.</li>
-            </ol>
-            <a href="#desktop-setup">Use the desktop userscript instead</a>
-          </div>
-          <div data-locale="ru-RU" lang="ru-RU" hidden>
-            <div class="android-header">
-              <div>
-                <h2>Установка на Android</h2>
-                <p>Для телефонов и планшетов с Android 8.0 и новее. Обновить Android System WebView можно в Google Play.</p>
-              </div>
-              <a class="button" href="https://github.com/bedrockbender/loneti-smile-collector/releases/latest/download/Loneti-Smile-Collector.apk">Скачать APK для Android</a>
-            </div>
-            <ol>
-              <li><strong>Скачайте и откройте APK.</strong> Найдите файл <code>Loneti-Smile-Collector.apk</code> в загрузках и нажмите на него.</li>
-              <li><strong>Установите приложение.</strong> Если Android запросит разрешение на установку неизвестных приложений, откройте настройки из этого окна. Разрешите установку для браузера или файлового менеджера, в котором вы открыли APK. Вернитесь и нажмите <strong>«Установить»</strong>. После установки разрешение можно отключить. <a href="https://support.google.com/pixelphone/answer/7391672?hl=ru">Инструкция Google</a>.</li>
-              <li><strong>Откройте «Коллекцию смайлов».</strong> Войдите в LONETI прямо в приложении. Нажмите на смайл в комментарии или чате и выберите <strong>«Добавить в „Мои смайлы“»</strong>. Найти его можно через <strong>⋮ → Мои смайлы</strong>.</li>
-            </ol>
-            <a href="#desktop-setup">Установка скрипта для браузера на компьютере</a>
-          </div>
-        </section>
-      </div>
-    </section>
+      </details>
+    </div>
 
     <div class="frame guide">
       <nav class="guide-nav" aria-label="On this page" data-locale="en-US">
-        <a href="#setup">Install</a>
+        <a href="#draw">Drawing tools</a>
         <a href="#collect">Collect</a>
         <a href="#organize">Organize</a>
         <a href="#share">Share</a>
         <a href="#protect">Copy protection</a>
       </nav>
       <nav class="guide-nav" aria-label="На этой странице" data-locale="ru-RU" lang="ru-RU" hidden>
-        <a href="#setup">Установка</a>
+        <a href="#draw">Инструменты рисования</a>
         <a href="#collect">Коллекция</a>
         <a href="#organize">Наборы</a>
         <a href="#share">Обмен</a>
@@ -187,6 +178,35 @@
       </nav>
 
       <div class="guide-content">
+        <section class="guide-section draw-section" id="draw">
+          <div data-locale="en-US">
+            <h2>Drawing tools</h2>
+            <p>Open <strong>Drawing tools</strong> in the standalone drawing editor, an online drawing room, or the Smile or avatar editor.</p>
+            <dl class="tool-list">
+              <dt>Polygon</dt>
+              <dd>Tap to place vertices, including in the space outside the drawing. Tap the first point or <strong>Finish</strong> to select the enclosed pixels inside the canvas.</dd>
+              <dt>Magic wand</dt>
+              <dd>Select similar colors with adjustable tolerance. Turn off <strong>Contiguous</strong> to select matching areas across the layer.</dd>
+              <dt>Gradient</dt>
+              <dd>Choose a linear or radial gradient. Tap the color strip to add a stop, choose its color and position, and save the preset if you want to reuse it. Drag across the drawing to apply it. An active selection limits the fill.</dd>
+            </dl>
+            <p>In rooms, other artists see the gradient in their regular LONETI editor. If the edit is too large to send, your layer stays as it was.</p>
+          </div>
+          <div data-locale="ru-RU" lang="ru-RU" hidden>
+            <h2>Инструменты рисования</h2>
+            <p>Откройте панель <strong>«Инструменты рисования»</strong> в обычном редакторе рисунков, онлайн-комнате рисования, редакторе смайлов или аватаров.</p>
+            <dl class="tool-list">
+              <dt>Многоугольник</dt>
+              <dd>Касайтесь рабочей области, чтобы поставить вершины. Точки можно размещать и за пределами холста. Нажмите на первую точку или <strong>«Готово»</strong>, чтобы выделить часть фигуры внутри холста.</dd>
+              <dt>Волшебная палочка</dt>
+              <dd>Выделяйте похожие цвета с настраиваемым допуском. Отключите выделение только соседних пикселей, чтобы захватить совпадающие области по всему слою.</dd>
+              <dt>Градиент</dt>
+              <dd>Выберите линейный или радиальный градиент. Коснитесь цветной полосы, чтобы добавить точку, и задайте её цвет и положение. Настройки можно сохранить как пресет. Проведите линию по рисунку, чтобы применить градиент. Если есть выделение, градиент останется внутри него.</dd>
+            </dl>
+            <p>В комнате градиент виден другим художникам в обычном редакторе LONETI. Если изменение слишком велико для отправки, слой сохранит прежний вид.</p>
+          </div>
+        </section>
+
         <section class="guide-section" id="collect">
           <div data-locale="en-US">
             <h2>Collect a Smile</h2>
@@ -224,7 +244,7 @@
               <dt>Receive</dt>
               <dd>On <strong>My emotes</strong>, choose <strong>Install pack</strong> beside <strong>Draw emote</strong>. Select the file, enter its password if prompted, and choose <strong>Preview pack</strong>. Review the contents, then choose <strong>Install pack</strong> to add the Smiles to your account.</dd>
             </dl>
-            <p class="note">A pack holds up to 100 Smiles and 16 MiB. Installation merges with a pack of the same name and reuses matching artwork from that pack or Unsorted. If an install is interrupted, try the same file again to continue after the library check.</p>
+            <p class="note">A named pack holds up to 16 Smiles. A <code>.lesp</code> file can be up to 16 MiB. Installation merges with a pack of the same name and reuses matching artwork from that pack or Unsorted. If an install is interrupted, try the same file again to continue after the library check.</p>
           </div>
           <div data-locale="ru-RU" lang="ru-RU" hidden>
             <h2>Обмен наборами</h2>
@@ -234,7 +254,7 @@
               <dt>Получение</dt>
               <dd>На странице <strong>«Мои смайлы»</strong> нажмите <strong>«Установить набор»</strong> рядом с <strong>«Нарисовать смайл»</strong>. Выберите файл, при необходимости введите пароль и нажмите <strong>«Предпросмотр набора»</strong>. Проверьте содержимое и нажмите <strong>«Установить набор»</strong>, чтобы добавить смайлы в свой аккаунт.</dd>
             </dl>
-            <p class="note">В наборе может быть до 100 смайлов, а размер файла ограничен 16 МиБ. При установке содержимое добавляется в одноимённый набор. Совпадающие изображения из этого набора или раздела <span>Без набора</span> используются повторно. Если установка прервалась, выберите тот же файл снова, чтобы продолжить после проверки библиотеки.</p>
+            <p class="note">В именованном наборе может быть до 16 смайлов. Размер файла <code>.lesp</code> ограничен 16 МиБ. При установке содержимое добавляется в одноимённый набор. Совпадающие изображения из этого набора или раздела <span>Без набора</span> используются повторно. Если установка прервалась, выберите тот же файл снова, чтобы продолжить после проверки библиотеки.</p>
           </div>
         </section>
 
@@ -244,7 +264,7 @@
             <ul>
               <li><strong>Drawing a Smile.</strong> In the editor’s save preview, check <strong>Prevent copying this Smile</strong> and use the normal <strong>Save</strong> button.</li>
               <li><strong>Editing a saved Smile.</strong> On <strong>My emotes</strong>, toggle <strong>Copy protection</strong> beneath the image and confirm. The script verifies a newly saved or existing matching edition in the pack before removing the old library entry. Earlier posts still use the image originally sent.</li>
-              <li><strong>Recognizing protection.</strong> A black lock marks protected Smiles in the picker and in the corner of the collection preview. The collector blocks collection and excludes protected Smiles from pack downloads.</li>
+              <li><strong>Recognizing protection.</strong> A black lock marks protected Smiles in the picker and in the corner of the collection preview. Loneti essentials blocks collection and excludes protected Smiles from pack downloads.</li>
             </ul>
           </div>
           <div data-locale="ru-RU" lang="ru-RU" hidden>
@@ -252,7 +272,7 @@
             <ul>
               <li><strong>При создании смайла.</strong> В окне предпросмотра перед сохранением отметьте <strong>«Защитить этот смайл от копирования»</strong>, затем нажмите обычную кнопку сохранения.</li>
               <li><strong>Для сохранённого смайла.</strong> На странице <strong>«Мои смайлы»</strong> измените флажок <strong>«Защита от копирования»</strong> под изображением и подтвердите замену. Скрипт проверит новую или уже существующую версию в наборе, прежде чем удалить старую запись библиотеки. В прошлых публикациях останется исходное изображение.</li>
-              <li><strong>Как распознать защиту.</strong> Чёрный замок отмечает защищённые смайлы в меню выбора и в углу окна предпросмотра. Скрипт блокирует добавление таких смайлов в коллекцию и исключает их из скачиваемых наборов.</li>
+              <li><strong>Как распознать защиту.</strong> Чёрный замок отмечает защищённые смайлы в меню выбора и в углу окна предпросмотра. Loneti essentials блокирует добавление таких смайлов в коллекцию и исключает их из скачиваемых наборов.</li>
             </ul>
           </div>
         </section>
@@ -262,7 +282,7 @@
 
   <footer class="site-footer">
     <div class="frame footer-inner">
-      <span>LONETI Smile Collector</span>
+      <a class="brand" href="#top">Loneti essentials</a>
       <a href="#top" data-locale="en-US">Back to top</a>
       <a href="#top" data-locale="ru-RU" lang="ru-RU" hidden>В начало страницы</a>
     </div>
