@@ -4,7 +4,7 @@ on:
     inputs:
       release_tag:
         description: Android release tag to test
-        default: android-v2.0.0
+        default: android-v2.1.0
         type: string
   push:
     paths:
@@ -25,7 +25,7 @@ jobs:
       - name: Download the signed Android release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || 'android-v2.0.0' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'android-v2.1.0' }}
         run: gh release download "$RELEASE_TAG" --pattern Loneti-essentials.apk --dir "$RUNNER_TEMP/loneti-apk"
       - name: Install smoke test SDK
         uses: android-actions/setup-android@v3

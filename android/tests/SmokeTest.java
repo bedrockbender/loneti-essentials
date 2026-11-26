@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.FrameLayout;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -59,7 +60,7 @@ public final class SmokeTest extends Instrumentation {
             String output = shell("am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n " + launchName);
             require(output.contains("Status: ok") && !output.contains("Error:"), "Activity start failed: " + output.trim());
             awaitApp(target);
-            awaitText("Loneti essentials");
+            awaitText("Try again");
             return;
         }
         Activity activity = startActivitySync(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -68,6 +69,18 @@ public final class SmokeTest extends Instrumentation {
         runOnMainSync(() -> {
             WebView web = findWebView(activity.getWindow().getDecorView());
             require(web != null, "Launcher has no WebView");
+            ViewGroup content = activity.findViewById(android.R.id.content);
+            require(content.getChildCount() == 1 && content.getChildAt(0) instanceof FrameLayout,
+                    "Activity should have a single full-screen content frame");
+            FrameLayout viewport = (FrameLayout) content.getChildAt(0);
+            require(viewport.getChildCount() == 2 && viewport.getChildAt(0) == web,
+                    "The content frame should contain the WebView and offline overlay only");
+            for (int i = 0; i < viewport.getChildCount(); i++) {
+                ViewGroup.LayoutParams size = viewport.getChildAt(i).getLayoutParams();
+                require(size.width == ViewGroup.LayoutParams.MATCH_PARENT
+                        && size.height == ViewGroup.LayoutParams.MATCH_PARENT,
+                        "The WebView and offline overlay should both fill the content frame");
+            }
             fixtureWeb[0] = web;
             web.stopLoading();
             SmokeSite site = new SmokeSite(web.getWebViewClient());
@@ -82,8 +95,14 @@ public final class SmokeTest extends Instrumentation {
         awaitJs(fixtureWeb[0], "window.fixtureHookAtHead===true"
                 + "&&window.fixtureObserverRemoved===true"
                 + "&&document.querySelector('iframe')?.contentWindow.fixtureFrameClean===true"
-                + "&&document.querySelectorAll('.js--container-work-canvas [data-loneti-essentials=tools]').length===1",
-                "one early drawing hook before the first inline script, one DOM-ready toolbar and no iframe hook");
+                + "&&document.querySelectorAll('.js--container-work-canvas [data-loneti-essentials=tools]').length===1"
+                + "&&document.querySelectorAll('#tools > .one_tool[data-tool]').length===4"
+                + "&&document.querySelectorAll('#tools button[data-le-tool]').length===3",
+                "one early drawing hook, three drawing tools in the native panel, one canvas overlay and no iframe hook");
+        runOnMainSync(activity::onBackPressed);
+        awaitText("Local LONETI smoke fixture");
+        click("Open smoke editor");
+        awaitText("Open smoke drawing");
         click("Open smoke drawing");
         click("Add this Smile to My emotes");
         awaitText("Add this Smile?");

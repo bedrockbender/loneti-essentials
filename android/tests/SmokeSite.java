@@ -86,7 +86,18 @@ final class SmokeSite extends WebViewClient {
 
     private static WebResourceResponse editor() {
         return page("<a href='/pict400_100'>Open smoke drawing</a>"
+                        + "<div class='cont-draw js--cont-draw'>"
+                        + "<div class='cont-tools-box box-mobile-menu'>"
+                        + "<div class='content-mobile-menu cont-tools-box__content-mobile'><div id='cont_tools'>"
+                        + "<div id='tools'><div class='one_tool tool_move' data-tool='move' title='Move'></div>"
+                        + "<div class='one_tool tool_selection' data-tool='selection' title='Selection'></div>"
+                        + "<div class='one_tool tool_lasso' data-tool='lasso' title='Lasso'></div>"
+                        + "<div class='one_tool tool_eraser' data-tool='eraser' title='Eraser'></div></div>"
+                        + "<div id='brushes'><div class='one_tool tool_brush active_tool'"
+                        + " data-tool='brush' title='Brush'></div></div></div>"
+                        + "<div id='cont_config'></div></div></div>"
                         + "<div class='js--container-work-canvas'><canvas class='js--work-canvas'></canvas></div>"
+                        + "</div>"
                         + "<iframe src='/draw/frame' title='Frame fixture' hidden></iframe>",
                 "window.fixtureHookAtHead=window.__lonetiCollectorInstalled===true"
                         + "&&typeof Object.getOwnPropertyDescriptor(Object.prototype,'transform_canvas')?.set==='function';"
