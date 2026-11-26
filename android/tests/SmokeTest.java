@@ -5,10 +5,14 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
+import android.os.PatternMatcher;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -21,6 +25,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -64,18 +70,27 @@ public final class SmokeTest extends Instrumentation {
             require(output.contains("Status: ok") && !output.contains("Error:"), "Activity start failed: " + output.trim());
             awaitApp(target);
             awaitText("Try again");
+            click("Язык / Language");
+            click("Русский");
+            awaitText("Попробовать снова");
+            shell("am force-stop " + target);
+            shell("am start -W -n " + launchName);
+            awaitText("Попробовать снова");
             return;
         }
+        if ("true".equals(arguments.getString("public_screens"))) {
+            capturePublicScreens(context, launch);
+            return;
+        }
+        int installedCode = context.getPackageManager().getPackageInfo(target, 0).versionCode;
+        UpdateFixture.serve(installedCode + 1, "2.3.1");
         Activity activity = startActivitySync(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         SmokeSite[] fixtureSite = new SmokeSite[1];
         WebView[] fixtureWeb = new WebView[1];
         runOnMainSync(() -> {
             WebView web = findWebView(activity.getWindow().getDecorView());
             require(web != null, "Launcher has no WebView");
-            ViewGroup content = activity.findViewById(android.R.id.content);
-            require(content.getChildCount() == 1 && content.getChildAt(0) instanceof FrameLayout,
-                    "Activity should have a single full-screen content frame");
-            FrameLayout viewport = (FrameLayout) content.getChildAt(0);
+            FrameLayout viewport = (FrameLayout) web.getParent();
             require(viewport.getChildCount() == 2 && viewport.getChildAt(0) == web,
                     "The content frame should contain the WebView and offline overlay only");
             for (int i = 0; i < viewport.getChildCount(); i++) {
@@ -92,6 +107,35 @@ public final class SmokeTest extends Instrumentation {
             web.loadUrl(SmokeSite.START);
         });
         awaitText("Local LONETI smoke fixture");
+        awaitText("Update 2.3.1 is available");
+        ViewGroup screen = (ViewGroup) ((ViewGroup) fixtureWeb[0].getParent()).getParent();
+        runOnMainSync(() -> require(screen.getChildAt(0).getBottom() <= screen.getChildAt(1).getTop(),
+                "Update notice covers web content"));
+        screenshot("fixture-update");
+        IntentFilter download = new IntentFilter(Intent.ACTION_VIEW);
+        download.addCategory(Intent.CATEGORY_BROWSABLE);
+        download.addDataScheme("https");
+        download.addDataAuthority("github.com", null);
+        download.addDataPath("/bedrockbender/loneti-essentials/releases/download/android-v2.3.1/Loneti-essentials.apk",
+                PatternMatcher.PATTERN_LITERAL);
+        ActivityMonitor monitor = addMonitor(download, new ActivityResult(Activity.RESULT_CANCELED, null), true);
+        click("Download");
+        require(checkMonitorHit(monitor, 1), "Download did not target the versioned APK");
+        click("Dismiss this update");
+        SharedPreferences updates = context.getSharedPreferences("updates", Context.MODE_PRIVATE);
+        require(updates.getInt("dismissed", 0) == installedCode + 1, "Dismissal did not survive in preferences");
+        require(find("Update 2.3.1 is available", 500) == null, "Dismissed notice stayed on screen");
+        updates.edit().putInt("code", installedCode + 2).putString("version", "2.3.2").apply();
+        awaitText("Update 2.3.2 is available");
+        updates.edit().putInt("code", installedCode).apply();
+        require(find("Update 2.3.2 is available", 1000) == null, "An installed version triggered a notice");
+        require(find("Язык / Language", 500) == null, "Language selector outside the closed menu");
+        click("Account menu");
+        click("Язык / Language");
+        awaitText("System default");
+        awaitText("Русский");
+        screenshot("fixture-language");
+        automation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);
         awaitWebViewFeatures(fixtureWeb[0]);
         click("Open smoke editor");
         awaitText("Open smoke drawing");
@@ -171,6 +215,48 @@ public final class SmokeTest extends Instrumentation {
         } finally {
             context.getContentResolver().delete(fixture, null, null);
         }
+    }
+
+    private void screenshot(String name) throws IOException {
+        waitForIdleSync();
+        Bitmap image = automation.takeScreenshot();
+        require(image != null, "Android could not capture " + name);
+        File path = new File(getTargetContext().getExternalFilesDir("screenshots"), name + ".png");
+        try (FileOutputStream out = new FileOutputStream(path)) {
+            require(image.compress(Bitmap.CompressFormat.PNG, 100, out), "Could not write " + name);
+        } finally {
+            image.recycle();
+        }
+    }
+
+    // Optional release screenshots use the public signed-out home page. All write tests run offline.
+    private void capturePublicScreens(Context context, Intent launch) throws Exception {
+        context.getSharedPreferences("app", Context.MODE_PRIVATE).edit().putString("language", "ru").commit();
+        SharedPreferences updates = context.getSharedPreferences("updates", Context.MODE_PRIVATE);
+        updates.edit().clear().putLong("nextCheck", System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1)).commit();
+        Activity activity = startActivitySync(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        WebView[] holder = new WebView[1];
+        runOnMainSync(() -> holder[0] = findWebView(activity.getWindow().getDecorView()));
+        WebView web = holder[0];
+        String footerLink = "document.querySelector('#footer a[href=\"loneti-essentials://language\"]')";
+        long deadline = SystemClock.uptimeMillis() + 45000;
+        while (!"true".equals(evaluate(web, "Boolean(" + footerLink + ")"))) {
+            if (SystemClock.uptimeMillis() > deadline) return;
+            SystemClock.sleep(300);
+        }
+        screenshot("public-home");
+        evaluate(web, footerLink + ".scrollIntoView({block:'center'})");
+        awaitText("Язык / Language");
+        screenshot("public-language-link");
+        click("Язык / Language");
+        awaitText("Как на устройстве");
+        screenshot("public-language");
+        automation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);
+        evaluate(web, "window.scrollTo(0,0)");
+        int installed = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionCode;
+        updates.edit().putInt("code", installed + 1).putString("version", "2.3.1").apply();
+        awaitText("Доступно обновление 2.3.1");
+        screenshot("public-update");
     }
 
     private void dragGradientStop(WebView web) throws Exception {

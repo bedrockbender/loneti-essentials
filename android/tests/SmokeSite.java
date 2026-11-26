@@ -49,6 +49,7 @@ final class SmokeSite extends WebViewClient {
     }
 
     @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+        if ("loneti-essentials".equals(request.getUrl().getScheme())) return production.shouldOverrideUrlLoading(view, request);
         return !HOST.equals(request.getUrl().getHost()) || production.shouldOverrideUrlLoading(view, request);
     }
 
@@ -59,7 +60,9 @@ final class SmokeSite extends WebViewClient {
         }
         String path = url.getPath();
         if ("/".equals(path)) {
-            return page("<h1>Local LONETI smoke fixture</h1><a href='/draw'>Open smoke editor</a>");
+            return page("<h1>Local LONETI smoke fixture</h1><a href='/draw'>Open smoke editor</a>"
+                    + "<button onclick='document.querySelector(\"#drop_user\").hidden=false'>Account menu</button>"
+                    + "<div id='drop_user' hidden><a href='/settings'>Settings</a><a href='/'>Log out</a></div>");
         }
         if ("/draw".equals(path)) return editor();
         if ("/draw/frame".equals(path)) {

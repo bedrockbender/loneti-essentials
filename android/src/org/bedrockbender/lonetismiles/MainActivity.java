@@ -1,9 +1,12 @@
 package org.bedrockbender.lonetismiles;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
@@ -48,6 +51,27 @@ public final class MainActivity extends Activity {
     private int connectedDocument = -1;
     private int pickerCode = 1000;
     private ValueCallback<Uri[]> fileSelection;
+    private String language;
+    private boolean reopenHome;
+    private UpdateNotice updateNotice;
+
+    @Override protected void attachBaseContext(Context base) {
+        String choice = base.getSharedPreferences("app", MODE_PRIVATE).getString("language", "");
+        Configuration config = new Configuration(base.getResources().getConfiguration());
+        language = choice;
+        if (!"ru".equals(choice) && !"en".equals(choice)) {
+            language = "en";
+            for (int i = 0; i < config.getLocales().size(); i++) {
+                String candidate = config.getLocales().get(i).getLanguage();
+                if (candidate.equals("ru") || candidate.equals("en")) {
+                    language = candidate;
+                    break;
+                }
+            }
+        }
+        config.setLocale(Locale.forLanguageTag(language));
+        super.attachBaseContext(base.createConfigurationContext(config));
+    }
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -57,12 +81,13 @@ public final class MainActivity extends Activity {
                     + "if(window!==window.top)return false;"
                     + "if(!['https://loneti.art','https://loneti.ru'].includes(location.origin))return false;"
                     + "if(window.__lonetiCollectorInstalled)return true;"
-                    + asset("pack-export.js") + "\n" + asset("collector.user.js")
+                    + asset("app-language.js") + "\n" + asset("pack-export.js") + "\n" + asset("collector.user.js")
                     + "\nwindow.__lonetiCollectorInstalled=true;return true;})()";
         } catch (IOException error) {
             throw new IllegalStateException("Missing bundled collector assets", error);
         }
-        FrameLayout root = new FrameLayout(this);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.WHITE);
         if (Build.VERSION.SDK_INT >= 35) {
             root.setOnApplyWindowInsetsListener((v, insets) -> {
@@ -72,10 +97,14 @@ public final class MainActivity extends Activity {
                 return WindowInsets.CONSUMED;
             });
         }
+        FrameLayout viewport = new FrameLayout(this);
+        root.addView(viewport, new LinearLayout.LayoutParams(-1, 0, 1));
         web = new WebView(this);
-        root.addView(web, -1, -1);
+        viewport.addView(web, -1, -1);
         errorPane = makeErrorPane();
-        root.addView(errorPane, -1, -1);
+        viewport.addView(errorPane, -1, -1);
+        updateNotice = new UpdateNotice(this);
+        root.addView(updateNotice, -1, -2);
         setContentView(root);
 
         WebSettings settings = web.getSettings();
@@ -97,7 +126,9 @@ public final class MainActivity extends Activity {
                     new HashSet<>(Arrays.asList("https://loneti.art", "https://loneti.ru")));
             documentStartRegistered = true;
         }
-        if (state == null || web.restoreState(state) == null) web.loadUrl(homeOrigin() + "/");
+        if (state == null || !language.equals(state.getString("siteLanguage")) || web.restoreState(state) == null) {
+            web.loadUrl(homeOrigin() + "/");
+        }
     }
 
     private int dp(int value) {
@@ -115,7 +146,21 @@ public final class MainActivity extends Activity {
     }
 
     private String homeOrigin() {
-        return Locale.getDefault().getLanguage().equals("ru") ? "https://loneti.ru" : "https://loneti.art";
+        return language.equals("ru") ? "https://loneti.ru" : "https://loneti.art";
+    }
+
+    private void chooseLanguage() {
+        String[] choices = {"", "ru", "en"};
+        String current = getSharedPreferences("app", MODE_PRIVATE).getString("language", "");
+        String[] names = {getString(R.string.system_language), "Русский", "English"};
+        new AlertDialog.Builder(this).setTitle(R.string.app_language)
+                .setSingleChoiceItems(names, Arrays.asList(choices).indexOf(current), (dialog, which) -> {
+                    dialog.dismiss();
+                    if (current.equals(choices[which]) && homeOrigin().equals(currentOrigin())) return;
+                    getSharedPreferences("app", MODE_PRIVATE).edit().putString("language", choices[which]).apply();
+                    reopenHome = !homeOrigin().equals(currentOrigin());
+                    recreate();
+                }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
     // Compare the full authority so credentials, alternate ports and lookalike domains are excluded.
@@ -152,6 +197,11 @@ public final class MainActivity extends Activity {
         retry.setText(R.string.retry);
         retry.setOnClickListener(v -> reload());
         pane.addView(retry);
+        Button languages = new Button(this, null, android.R.attr.borderlessButtonStyle);
+        languages.setText(R.string.app_language);
+        languages.setAllCaps(false);
+        languages.setOnClickListener(v -> chooseLanguage());
+        pane.addView(languages);
         pane.setVisibility(View.GONE);
         return pane;
     }
@@ -165,6 +215,10 @@ public final class MainActivity extends Activity {
         @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             Uri uri = request.getUrl();
             if (!request.isForMainFrame()) return false;
+            if ("loneti-essentials://language".equals(uri.toString())) {
+                if (request.hasGesture() && currentOrigin() != null) chooseLanguage();
+                return true;
+            }
             if (siteOrigin(uri) != null) return false;
             if ("http".equalsIgnoreCase(uri.getScheme())) {
                 Uri secure = uri.buildUpon().scheme("https").build();
@@ -285,12 +339,16 @@ public final class MainActivity extends Activity {
 
     @Override protected void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out);
-        web.saveState(out);
+        if (!reopenHome) {
+            out.putString("siteLanguage", language);
+            web.saveState(out);
+        }
     }
 
     @Override protected void onResume() {
         super.onResume();
         web.onResume();
+        updateNotice.check();
     }
 
     @Override protected void onPause() {

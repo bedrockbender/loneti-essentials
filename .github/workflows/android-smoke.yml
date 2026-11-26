@@ -4,8 +4,12 @@ on:
     inputs:
       release_tag:
         description: Android release tag to test
-        default: android-v2.2.0
+        default: android-v2.3.0
         type: string
+      public_screens:
+        description: Capture screenshots of the public signed-out Russian home page
+        default: false
+        type: boolean
   push:
     branches: [main]
     paths:
@@ -26,7 +30,7 @@ jobs:
       - name: Download the signed Android release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || 'android-v2.2.0' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'android-v2.3.0' }}
         run: gh release download "$RELEASE_TAG" --repo bedrockbender/loneti-essentials --pattern Loneti-essentials.apk --dir "$RUNNER_TEMP/loneti-apk"
       - name: Install smoke test SDK
         uses: android-actions/setup-android@v3
@@ -40,6 +44,8 @@ jobs:
             echo "KVM is unavailable. The emulator action will use software acceleration."
           fi
       - name: Smoke test the signed APK
+        env:
+          LONETI_PUBLIC_SCREENS: ${{ inputs.public_screens && 'true' || 'false' }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -50,3 +56,9 @@ jobs:
           emulator-boot-timeout: 900
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash android/tests/run-smoke.sh "$RUNNER_TEMP/loneti-apk/Loneti-essentials.apk"
+      - name: Save Android screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-screenshots
+          path: ${{ runner.temp }}/loneti-screenshots/*.png
+          if-no-files-found: error

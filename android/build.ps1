@@ -113,6 +113,7 @@ try {
     ) | Set-Content -LiteralPath $appRules -Encoding ascii
 
     Copy-Item -LiteralPath $packExport -Destination $assets
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'assets/app-language.js') -Destination $assets
     Copy-Item -LiteralPath $collector -Destination (Join-Path $assets 'collector.user.js')
     Copy-Item -LiteralPath $projectLicense -Destination (Join-Path $assets 'loneti-essentials-license.txt')
     foreach ($name in @('androidx-apache-2.0.txt', 'chromium-bsd.txt')) {

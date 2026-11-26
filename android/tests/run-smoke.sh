@@ -65,3 +65,12 @@ run_test -e launch_only true
 "$adb" install "$work/instrumented-app.apk"
 "$adb" install "$work/flow-test.apk"
 run_test
+
+if [[ "${LONETI_PUBLIC_SCREENS:-false}" == true ]]; then
+    "$adb" shell cmd connectivity airplane-mode disable
+    "$adb" shell svc wifi enable
+    run_test -e public_screens true
+fi
+out="${RUNNER_TEMP:-$work}/loneti-screenshots"
+mkdir -p "$out"
+"$adb" pull "/sdcard/Android/data/$app/files/screenshots/." "$out"

@@ -14,6 +14,10 @@ Loneti essentials is an independent project for LONETI. Its original code and do
 
 The app uses Android System WebView and has its own LONETI sign-in session. Keep WebView up to date. Use **Download pack** and **Install pack** in My emotes to move a named pack between the app and your browser. Android opens its Files picker to choose where to save or which file to install.
 
+The app starts with the first supported language in your phone’s language list. To choose Russian or English yourself, open **Язык / Language** in the account menu or Settings. Before sign-in, the link is in the home page footer. It is also available on the connection error screen. The app remembers your choice. Switching between the Russian and English sites opens the other domain, which has its own sign-in and pack membership.
+
+From Android 2.3.0, opening or returning to the app checks the published release at most once a day after a successful check. When a newer APK is available, **Download** opens it in your browser and **×** dismisses that version. Install 2.3.0 manually over older versions to start receiving notices.
+
 ## Install with Tampermonkey
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser. In Chrome, type `chrome://extensions` into a new tab. Find the Tampermonkey card, click **Details**, and turn on **Allow User Scripts**. In Edge, start at `edge://extensions`. If the switch is missing, enable **Developer mode** on the browser’s extensions list. Firefox users can go straight to step 2. [Tampermonkey permissions guide](https://www.tampermonkey.net/faq.php?locale=en&q=Q209)
@@ -74,4 +78,4 @@ Read-Host 'Keystore password' -AsSecureString | ConvertFrom-SecureString |
 
 The build verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-essentials.apk`. Android requires matching signing keys for an in-place update. Use a spare device or emulator to try a locally signed build if the official app is already installed.
 
-The [Android 2.2.0 source](https://github.com/bedrockbender/loneti-essentials/tree/android-v2.2.0) and [userscript 3.2.0 source](https://github.com/bedrockbender/loneti-essentials/tree/userscript-v3.2.0) are tagged at the same commit. Both include Smile collection from direct messages and user Walls.
+The [Android 2.3.0 source](https://github.com/bedrockbender/loneti-essentials/tree/android-v2.3.0) includes in-app language selection and update notices. It bundles the [3.2.0 userscript](https://github.com/bedrockbender/loneti-essentials/tree/userscript-v3.2.0). For an Android release, publish the signed APK at `android-v<versionName>/Loneti-essentials.apk` on GitHub Releases before deploying the matching `versionCode` and `versionName` in `android/latest.json` to the website.
