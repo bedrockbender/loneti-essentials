@@ -103,8 +103,18 @@ function installNativeOutlineRenderer(tool) {
   if (nativeEditorOutlineRenderers.has(tool)) return;
   const drawLines = tool.drawLines;
   tool.drawLines = function (points) {
+    if (!this.user_context.checkMyUser()) return drawLines.call(this, points);
+    // Native lasso activation sizes this overlay. The wand and polygon can
+    // reach it directly, even if the room was hidden when the lasso was built.
+    const overlay = this.getCanvas();
+    const viewport = this.canva.work_canvas.getSizeCanvas();
+    // LONETI also composites this canvas during a resize. drawImage needs
+    // a nonempty source even when its destination is temporarily hidden.
+    const width = Math.max(1, viewport.width), height = Math.max(1, viewport.height);
+    if (overlay.width !== width) overlay.width = width;
+    if (overlay.height !== height) overlay.height = height;
     const contours = nativeEditorContours.get(points);
-    if (!contours || !this.user_context.checkMyUser()) return drawLines.call(this, points);
+    if (!contours) return drawLines.call(this, points);
     this.clearCanvas();
     for (const contour of contours) {
       const scaled = this.scalePointsSelection(contour);

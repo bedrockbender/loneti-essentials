@@ -23,7 +23,7 @@ if (!browser || !globalThis.WebSocket || !existsSync(room) || !existsSync(assets
   process.exit(0);
 }
 
-const native = ['editor/png.js', 'editor/native.js'].map(path => readFileSync(join(repo, path), 'utf8')).join('\n')
+const native = ['editor/png.js', 'editor/native.js', 'editor/pixels.js'].map(path => readFileSync(join(repo, path), 'utf8')).join('\n')
   + '\nwindow.fixtureEditor = getNativeEditor; window.fixtureEngine = () => nativeEditorEngine;';
 const main = readFileSync(join(assets, bundle('mainer')));
 const chat = readFileSync(join(assets, bundle('chat')));
@@ -45,7 +45,8 @@ const server = createServer((request, response) => {
   const member = url.searchParams.get('member') === '456' ? 456 : 123;
   const sources = {
     '/chat': () => structure.replace(/<head>/i, '<head>' +
-      '<style>.js--container-work-canvas{width:700px;height:600px}</style>' +
+      '<style>.js--container-work-canvas{width:700px;height:600px}' +
+      (member === 123 ? 'html:not(.room-open) .js--container-work-canvas{display:none}' : '') + '</style>' +
       '<script src="/native.js"></script><script src="/mainer.js"></script>' +
       '<script src="/globals.js?member=' + member + '"></script><script src="/chat.js"></script>'),
     '/globals.js': () => 'Object.assign(window,{id_user:' + member +
@@ -86,6 +87,8 @@ async function regression() {
   document.body.append(iframe);
   await waitFor(() => window.fixtureEngine?.() && iframe.contentWindow.fixtureEngine?.(), 'Two native room editors did not initialize');
   const sender = ready(window);
+  document.documentElement.classList.add('room-open');
+  sender.actionWindowResize();
   const recipient = ready(iframe.contentWindow);
   const member = sender.getIdUser();
   require(member !== recipient.getIdUser(), 'Expected different synthetic room members');
@@ -122,6 +125,71 @@ async function regression() {
     await waitFor(async () => await hash(receiverLayer.ctx.getImageData(0, 0, width, height).data) === expected,
       'Unmodified recipient failed to reproduce ' + eventName);
   }
+
+  function stroke(tool, coordinates) {
+    const configs = { ...user.tools_draw.getToolByName(tool).values, color: '0,0,0', line_width: 8 };
+    const points = coordinates.map(([x, y]) => ({ x, y, pressure: 1 }));
+    const dispatch = (event, coords) => user.user_events.trigger(event, {
+      name_tool: tool, coords, configs_drawing: configs, index_layer: sourceLayer.index,
+    });
+    dispatch('start_draw', points[0]);
+    for (const point of points.slice(1)) dispatch('move_draw', point);
+    dispatch('finish_draw', points.at(-1));
+  }
+  async function syncStroke() {
+    const actions = JSON.parse(JSON.stringify(queue.getActionsChat()));
+    queue.clearActionsChat();
+    require(actions.at(-1)?.event === 'finish_draw', 'Expected a native stroke');
+    await recipient.draw_users.addDrawActions(member, actions);
+    const expected = await hash(api.readLayer().data);
+    await waitFor(async () => await hash(receiverLayer.ctx.getImageData(0, 0, width, height).data) === expected,
+      'Sender and observer disagree after the stroke');
+  }
+
+  const x = Math.floor(width / 2), y = Math.floor(height / 2);
+  const viewport = sender.work_canvas.getSizeCanvas();
+  sender.transform_canvas.setZoom(1);
+  sender.transform_canvas.setOffsets({ x: viewport.width / 2 - x, y: viewport.height / 2 - y });
+  const left = x - 30, right = x + 30, top = y - 30, bottom = y + 30;
+  stroke('pencil', [[left, top], [right, top], [right, bottom], [left, bottom], [left, top]]);
+  await syncStroke();
+  const area = wandMask(api.readLayer(), { x, y }, 0, true);
+  require(area[y * width + x] && !area[y * width + left], 'Wand should select the enclosed area');
+  require(api.setSelection(area), 'Wand outline should fit natively');
+  const pixels = maskedPaint(api.readLayer(), area, ctx => gradientPaint(ctx, 'linear',
+    { x: x - 20, y }, { x: x + 20, y }, [{ at: 0, color: 'red' }, { at: 100, color: 'blue' }]), false);
+  await replay(() => api.commitLayer(pixels), await hash(pixels.data), 'history_repeat');
+  const remoteUser = recipient.users_canvas.getUser(member);
+  require(JSON.stringify(api.selectionKey()) === JSON.stringify(remoteUser.events_draw.getSelectionPoints()),
+    'Observer should have the same wand selection as the sender');
+  // A resize can also hide an already selected room, then reveal it again.
+  for (const open of [false, true]) {
+    document.documentElement.classList.toggle('room-open', open);
+    sender.actionWindowResize();
+    sender.work_canvas.renderAll({ layers: true });
+  }
+  function displayedPixel(x, y) {
+    const screen = sender.transform_canvas.coordsToDisplayInt({ x, y });
+    const { width, height } = sender.work_canvas.getSizeCanvas();
+    require(screen.x >= 0 && screen.y >= 0 && screen.x < width && screen.y < height,
+      'Test pixel must be visible in the editor: ' + [screen.x, screen.y, width, height].join(', '));
+    return sender.work_canvas.ctx_canvas.getImageData(screen.x, screen.y, 1, 1).data;
+  }
+  const filled = displayedPixel(x, y);
+  require(filled[0] > 40 && filled[1] < 10 && filled[2] > 40, 'Local room must display the gradient');
+  const opacityAt = px => sourceLayer.ctx.getImageData(px, y, 1, 1).data[3];
+  require(opacityAt(left) === 255, 'The stroke will cross an opaque part of the outline');
+  const acrossBoundary = [[left - 10, y], [x + 10, y]];
+  stroke('eraser', acrossBoundary);
+  require(opacityAt(x) === 0, 'Native eraser should erase inside the gradient');
+  require(opacityAt(left) === 255, 'Selection should still protect the outline');
+  await waitFor(() => displayedPixel(x, y).slice(0, 3).every(channel => channel === 255),
+    'The sender must see the erased pixel on the white room background');
+  await syncStroke();
+  sender.hotkeyClearSelection();
+  stroke('eraser', acrossBoundary);
+  require(opacityAt(left) === 0, 'Deselect releases the outline for editing');
+  await syncStroke();
 
   const original = gradient('#0a9ec3', '#ffd112');
   const next = gradient('#ff0000', '#0c23c8');
@@ -163,8 +231,13 @@ let socket;
 const timeout = setTimeout(() => { socket?.close(); chrome.kill(); server.close(); process.exitCode = 1; }, 25000);
 try {
   const portFile = join(profile, 'DevToolsActivePort');
-  for (let attempt = 0; !existsSync(portFile) && attempt < 90; attempt++) await delay(50);
-  const port = readFileSync(portFile, 'utf8').split(/\r?\n/)[0];
+  let port;
+  for (let attempt = 0; !port && attempt < 90; attempt++) {
+    try { port = readFileSync(portFile, 'utf8').split(/\r?\n/)[0]; }
+    catch (error) { if (error.code !== 'ENOENT' && error.code !== 'EBUSY') throw error; }
+    if (!port) await delay(50);
+  }
+  if (!port) throw Error('Chromium did not publish its debugging port');
   const target = (await fetch('http://127.0.0.1:' + port + '/json/list').then(response => response.json()))
     .find(tab => tab.type === 'page');
   socket = new WebSocket(target.webSocketDebuggerUrl);
@@ -195,6 +268,7 @@ try {
     expression: '(' + regression.toString() + ')()', awaitPromise: true, returnByValue: true,
   });
   if (result.result?.value !== true) throw Error(result.exceptionDetails?.exception?.description || 'Room regression failed');
+  console.log('PASS room wand, gradient and native eraser on the sender display and observer layer');
   console.log('PASS compact room replay, native Undo/Redo, and over-limit rollback');
 } finally {
   clearTimeout(timeout);

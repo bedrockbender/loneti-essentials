@@ -74,4 +74,4 @@ Read-Host 'Keystore password' -AsSecureString | ConvertFrom-SecureString |
 
 The build verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-essentials.apk`. Android requires matching signing keys for an in-place update. Use a spare device or emulator to try a locally signed build if the official app is already installed.
 
-The [Android 2.1.1 tag](https://github.com/bedrockbender/loneti-essentials/tree/android-v2.1.1) points to the source of the signed Android APK. The same signed download is available from both repositories.
+The [Android 2.1.2 source](https://github.com/bedrockbender/loneti-essentials/tree/android-v2.1.2) and [userscript 3.1.3 source](https://github.com/bedrockbender/loneti-essentials/tree/userscript-v3.1.3) are tagged at the same commit. Both include the room selection repaint fix.
