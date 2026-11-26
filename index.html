@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Install LONETI Smile Collector to collect Smiles, organize your library, and share packs.">
+  <title>LONETI Smile Collector</title>
+  <link rel="stylesheet" href="./site.css">
+  <script defer src="./site.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="frame header-inner">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>LONETI <span class="brand-detail">Smile Collector</span></span>
+      </a>
+      <div class="language" role="group" data-language-options aria-label="Language" hidden>
+        <button type="button" data-language="en-US" lang="en-US" aria-pressed="true">EN</button>
+        <button type="button" data-language="ru-RU" lang="ru-RU" aria-pressed="false">Русский</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="hero">
+      <div class="frame hero-grid">
+        <div class="hero-copy" data-locale="en-US">
+          <h1>Collect and share <em>Smiles.</em></h1>
+          <p>Save Smiles from LONETI comments and drawing rooms, sort them into packs, and send a pack to a friend.</p>
+          <div class="hero-actions">
+            <a class="button" href="./loneti-smile-collector.user.js">Install userscript</a>
+            <a class="text-link" href="#setup">Setup instructions</a>
+          </div>
+        </div>
+        <div class="hero-copy" data-locale="ru-RU" lang="ru-RU" hidden>
+          <h1>Собирайте смайлы <em>и делитесь ими.</em></h1>
+          <p>Сохраняйте смайлы из комментариев и чатов комнат для рисования LONETI, собирайте их в наборы и отправляйте друзьям.</p>
+          <div class="hero-actions">
+            <a class="button" href="./loneti-smile-collector.user.js">Установить скрипт</a>
+            <a class="text-link" href="#setup">Как установить</a>
+          </div>
+        </div>
+        <div class="smile-stack" aria-hidden="true">
+          <span class="smile-card card-back"></span>
+          <span class="smile-card card-middle"></span>
+          <span class="smile-card card-front">
+            <span class="smile-face"></span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame guide">
+      <nav class="guide-nav" aria-label="On this page" data-locale="en-US">
+        <a href="#setup">Install</a>
+        <a href="#collect">Collect</a>
+        <a href="#organize">Organize</a>
+        <a href="#share">Share</a>
+        <a href="#protect">Copy protection</a>
+      </nav>
+      <nav class="guide-nav" aria-label="На этой странице" data-locale="ru-RU" lang="ru-RU" hidden>
+        <a href="#setup">Установка</a>
+        <a href="#collect">Коллекция</a>
+        <a href="#organize">Наборы</a>
+        <a href="#share">Обмен</a>
+        <a href="#protect">Защита от копирования</a>
+      </nav>
+
+      <div class="guide-content">
+        <section class="guide-section" id="setup">
+          <div data-locale="en-US">
+            <h2>Install with Tampermonkey</h2>
+            <ol>
+              <li>Install <a href="https://www.tampermonkey.net/">Tampermonkey</a> in your browser. For Firefox, use the regular <a href="https://www.tampermonkey.net/index.php?browser=firefox">Firefox add-on</a>.</li>
+              <li>On Chrome 138 and later, open Tampermonkey’s extension settings and turn on <strong>Allow User Scripts</strong>. If the switch is missing on Chrome or Edge, enable <strong>Developer mode</strong> on the browser’s Extensions page. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q209">Official permissions guide</a>.</li>
+              <li>Choose <strong>Install userscript</strong> above and select <strong>Install</strong> in Tampermonkey’s confirmation screen. Reload your LONETI tabs and sign in. The userscript follows the language of LONETI. This guide follows your browser language until you choose EN or Русский.</li>
+            </ol>
+            <p class="note">The userscript requests no special Tampermonkey grants. If your browser opens the source code instead of the installer, copy the file into a new script in the Tampermonkey dashboard and save it. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Official installation guide</a>.</p>
+          </div>
+          <div data-locale="ru-RU" lang="ru-RU" hidden>
+            <h2>Установка через Tampermonkey</h2>
+            <ol>
+              <li>Установите <a href="https://www.tampermonkey.net/">Tampermonkey</a> для своего браузера. Для Firefox используйте обычное <a href="https://www.tampermonkey.net/index.php?browser=firefox">расширение Firefox</a>.</li>
+              <li>В Chrome 138 и новее откройте настройки расширения Tampermonkey и включите <strong>«Разрешить пользовательские скрипты»</strong> (<span lang="en-US">Allow User Scripts</span>). Если в Chrome или Edge этого переключателя нет, включите <strong>«Режим разработчика»</strong> на странице расширений браузера. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q209">Официальная инструкция по разрешениям</a>.</li>
+              <li>Нажмите <strong>«Установить скрипт»</strong> выше и подтвердите установку кнопкой <strong>«Установить»</strong> в окне Tampermonkey. Перезагрузите вкладки LONETI и войдите в аккаунт. Язык скрипта совпадает с языком LONETI. Эта инструкция открывается на языке браузера, пока вы не выберете EN или Русский.</li>
+            </ol>
+            <p class="note">Скрипт не запрашивает специальных разрешений Tampermonkey. Если браузер открыл исходный код, скопируйте его в новый скрипт в панели Tampermonkey и сохраните. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Официальная инструкция по установке</a>.</p>
+          </div>
+        </section>
+
+        <section class="guide-section" id="collect">
+          <div data-locale="en-US">
+            <h2>Collect a Smile</h2>
+            <p>On a drawing comment or in a drawing-room chat, hover over a Smile to see its outline and click it. With a keyboard, use <kbd>Tab</kbd> to focus the Smile and <kbd>Enter</kbd> to open its preview.</p>
+            <p>Choose <strong>Add to my Smiles</strong> to save it to your account. Use <strong>Cancel</strong> or press <kbd>Esc</kbd> to close the preview. Collection requires the original 300 × 300 PNG so the script can check its copying preference.</p>
+          </div>
+          <div data-locale="ru-RU" lang="ru-RU" hidden>
+            <h2>Сохранение смайлов</h2>
+            <p>В комментарии к рисунку или в чате комнаты наведите указатель на смайл, чтобы увидеть рамку, и щёлкните по нему. С клавиатуры выберите смайл клавишей <kbd>Tab</kbd> и откройте предпросмотр клавишей <kbd>Enter</kbd>.</p>
+            <p>Нажмите <strong>Добавить в «Мои смайлы»</strong>, чтобы сохранить смайл в свой аккаунт. Чтобы закрыть предпросмотр, нажмите <strong>«Отмена»</strong> или клавишу <kbd>Esc</kbd>. Для сохранения нужен исходный PNG размером 300 × 300, чтобы скрипт мог проверить защиту от копирования.</p>
+          </div>
+        </section>
+
+        <section class="guide-section" id="organize">
+          <div data-locale="en-US">
+            <h2>Organize your library</h2>
+            <p>On <strong>My emotes</strong>, choose <strong>New pack</strong> and name it. Smiles begin in <strong>Unsorted</strong>. Use the menu below each Smile to move it to a pack, and choose <strong>Rename</strong> to edit a pack name.</p>
+            <p>Expand pack headings in your library or in the Smile picker for comments and rooms. Inside a pack, the newest library entries appear first. Click a Smile in the picker to use it as usual.</p>
+            <p class="note">LONETI stores your images in your account. Pack names and assignments stay in this browser for your account and LONETI domain. Export a pack to bring the grouping to another browser.</p>
+          </div>
+          <div data-locale="ru-RU" lang="ru-RU" hidden>
+            <h2>Организация библиотеки</h2>
+            <p>На странице <strong>«Мои смайлы»</strong> нажмите <strong>«Новый набор»</strong> и назовите набор. Смайлы без набора находятся в разделе <strong>«Без набора»</strong>. Выберите набор в меню под нужным смайлом. Чтобы изменить название набора, нажмите <strong>«Переименовать»</strong>.</p>
+            <p>Наборы раскрываются по нажатию на заголовок в библиотеке и в меню выбора смайлов в комментариях и чатах комнат. Новые записи библиотеки отображаются первыми. Нажмите на смайл в меню, чтобы использовать его как обычно.</p>
+            <p class="note">Изображения хранятся в аккаунте LONETI. Названия наборов и распределение смайлов сохраняются в этом браузере для вашего аккаунта и домена LONETI. Чтобы перенести набор в другой браузер, скачайте его.</p>
+          </div>
+        </section>
+
+        <section class="guide-section" id="share">
+          <div data-locale="en-US">
+            <h2>Share a pack</h2>
+            <dl class="steps">
+              <dt>Send</dt>
+              <dd>Open a pack and choose <strong>Download pack</strong> to save a <code>.lesp</code> file. Set a password to encrypt the artwork and the pack name inside the file. With the password blank, anyone who has the file can install it. The filename contains the pack name.</dd>
+              <dt>Receive</dt>
+              <dd>On <strong>My emotes</strong>, choose <strong>Install pack</strong> beside <strong>Draw emote</strong>. Select the file, enter its password if prompted, and choose <strong>Preview pack</strong>. Review the contents, then choose <strong>Install pack</strong> to add the Smiles to your account.</dd>
+            </dl>
+            <p class="note">A pack holds up to 100 Smiles and 16 MiB. Installation merges with a pack of the same name and reuses matching artwork from that pack or Unsorted. If an install is interrupted, try the same file again to continue after the library check.</p>
+          </div>
+          <div data-locale="ru-RU" lang="ru-RU" hidden>
+            <h2>Обмен наборами</h2>
+            <dl class="steps">
+              <dt>Отправка</dt>
+              <dd>Откройте набор и нажмите <strong>«Скачать набор»</strong>, чтобы сохранить файл <code>.lesp</code>. Пароль шифрует изображения и название набора внутри файла. Если оставить поле пустым, набор сможет установить любой, у кого есть файл. Название набора видно в имени файла.</dd>
+              <dt>Получение</dt>
+              <dd>На странице <strong>«Мои смайлы»</strong> нажмите <strong>«Установить набор»</strong> рядом с <strong>«Нарисовать смайл»</strong>. Выберите файл, при необходимости введите пароль и нажмите <strong>«Предпросмотр набора»</strong>. Проверьте содержимое и нажмите <strong>«Установить набор»</strong>, чтобы добавить смайлы в свой аккаунт.</dd>
+            </dl>
+            <p class="note">В наборе может быть до 100 смайлов, а размер файла ограничен 16 МиБ. При установке содержимое добавляется в одноимённый набор. Совпадающие изображения из этого набора или раздела <span>Без набора</span> используются повторно. Если установка прервалась, выберите тот же файл снова, чтобы продолжить после проверки библиотеки.</p>
+          </div>
+        </section>
+
+        <section class="guide-section" id="protect">
+          <div data-locale="en-US">
+            <h2>Set copy protection</h2>
+            <ul>
+              <li><strong>Drawing a Smile.</strong> In the editor’s save preview, check <strong>Prevent copying this Smile</strong> and use the normal <strong>Save</strong> button.</li>
+              <li><strong>Editing a saved Smile.</strong> On <strong>My emotes</strong>, toggle <strong>Copy protection</strong> beneath the image and confirm. The script verifies a newly saved or existing matching edition in the pack before removing the old library entry. Earlier posts still use the image originally sent.</li>
+              <li><strong>Recognizing protection.</strong> A black lock marks protected Smiles in the picker and in the corner of the collection preview. The collector blocks collection and excludes protected Smiles from pack downloads.</li>
+            </ul>
+            <p class="note">Copy protection is a mark in the original PNG. Other tools can save or capture visible images, and image processing can remove the mark. A pack’s password protects the file until it is unlocked. Recipients can still share the unlocked artwork.</p>
+          </div>
+          <div data-locale="ru-RU" lang="ru-RU" hidden>
+            <h2>Защита от копирования</h2>
+            <ul>
+              <li><strong>При создании смайла.</strong> В окне предпросмотра перед сохранением отметьте <strong>«Защитить этот смайл от копирования»</strong>, затем нажмите обычную кнопку сохранения.</li>
+              <li><strong>Для сохранённого смайла.</strong> На странице <strong>«Мои смайлы»</strong> измените флажок <strong>«Защита от копирования»</strong> под изображением и подтвердите замену. Скрипт проверит новую или уже существующую версию в наборе, прежде чем удалить старую запись библиотеки. В прошлых публикациях останется исходное изображение.</li>
+              <li><strong>Как распознать защиту.</strong> Чёрный замок отмечает защищённые смайлы в меню выбора и в углу окна предпросмотра. Скрипт блокирует добавление таких смайлов в коллекцию и исключает их из скачиваемых наборов.</li>
+            </ul>
+            <p class="note">Защита от копирования представляет собой метку в исходном PNG. Другие программы могут сохранить видимое изображение или сделать снимок экрана, а обработка изображения может удалить метку. Пароль защищает файл набора до его открытия. Получатели могут делиться расшифрованными изображениями.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="frame footer-inner">
+      <span>LONETI Smile Collector</span>
+      <a href="#top" data-locale="en-US">Back to top</a>
+      <a href="#top" data-locale="ru-RU" lang="ru-RU" hidden>В начало страницы</a>
+    </div>
+  </footer>
+</body>
+</html>
