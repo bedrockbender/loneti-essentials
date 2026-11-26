@@ -241,7 +241,7 @@ public final class SmokeTest extends Instrumentation {
         String footerLink = "document.querySelector('#footer a[href=\"loneti-essentials://language\"]')";
         long deadline = SystemClock.uptimeMillis() + 60000;
         while (!"true".equals(evaluate(web, "Boolean(" + footerLink + ")"))) {
-            if (SystemClock.uptimeMillis() > deadline) return;
+            require(SystemClock.uptimeMillis() < deadline, "Could not load the public Russian home page for screenshots");
             tryClick("Попробовать снова", 500);
             SystemClock.sleep(750);
         }

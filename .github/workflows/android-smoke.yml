@@ -7,7 +7,7 @@ on:
         default: android-v2.3.0
         type: string
       public_screens:
-        description: Capture screenshots of the public signed-out Russian home page
+        description: Only capture screenshots of the public signed-out Russian home page
         default: false
         type: boolean
   push:

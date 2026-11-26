@@ -52,25 +52,25 @@ run_test() {
 build_test test.loneti.smoke "$work/launcher-test.apk"
 build_test "$app" "$work/flow-test.apk"
 sign "$apk" "$work/instrumented-app.apk"
-"$adb" shell cmd connectivity airplane-mode enable
 "$adb" shell input keyevent 82
 "$adb" shell dumpsys webviewupdate
 
-"$adb" install "$apk"
-"$adb" install "$work/launcher-test.apk"
-run_test -e launch_only true
-"$adb" uninstall test.loneti.smoke
-"$adb" uninstall "$app"
-
-"$adb" install "$work/instrumented-app.apk"
-"$adb" install "$work/flow-test.apk"
-run_test
-
+flow_args=()
 if [[ "${LONETI_PUBLIC_SCREENS:-false}" == true ]]; then
     "$adb" shell cmd connectivity airplane-mode disable
     "$adb" shell svc wifi enable
-    run_test -e public_screens true
+    flow_args=(-e public_screens true)
+else
+    "$adb" shell cmd connectivity airplane-mode enable
+    "$adb" install "$apk"
+    "$adb" install "$work/launcher-test.apk"
+    run_test -e launch_only true
+    "$adb" uninstall test.loneti.smoke
+    "$adb" uninstall "$app"
 fi
+"$adb" install "$work/instrumented-app.apk"
+"$adb" install "$work/flow-test.apk"
+run_test "${flow_args[@]}"
 out="${RUNNER_TEMP:-$work}/loneti-screenshots"
 mkdir -p "$out"
 "$adb" pull "/sdcard/Android/data/$app/files/screenshots/." "$out"
