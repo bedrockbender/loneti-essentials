@@ -4,7 +4,7 @@ on:
     inputs:
       release_tag:
         description: Android release tag to test
-        default: android-v2.4.0
+        default: android-v2.4.1
         type: string
       public_screens:
         description: Only capture screenshots of the public signed-out Russian home page
@@ -30,7 +30,7 @@ jobs:
       - name: Download the signed Android release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || 'android-v2.4.0' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'android-v2.4.1' }}
         run: gh release download "$RELEASE_TAG" --repo bedrockbender/loneti-essentials --pattern Loneti-essentials.apk --dir "$RUNNER_TEMP/loneti-apk"
       - name: Install smoke test SDK
         uses: android-actions/setup-android@v3

@@ -5,7 +5,7 @@
     <string name="retry">Try again</string>
     <string name="link_warning_title">Posting links on LONETI</string>
     <string name="dismiss_warning">Got it</string>
-    <string name="link_warning">Despite what you may have heard, the admin is alive and well. They still ban people for posting links on the Wall, in rooms, or in comments. Play it safe and share links through another service.</string>
+    <string name="link_warning">The admin may ban people who post links on the Wall, in rooms, or in comments. To be safe, avoid posting links on LONETI. If you want to share a link, use another service.</string>
     <string name="app_language" translatable="false">Язык / Language</string>
     <string name="system_language">System default</string>
     <string name="available_update">Update %1$s is available</string>
