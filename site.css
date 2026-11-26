@@ -192,20 +192,39 @@ a:hover { text-decoration-thickness: .12em; }
 }
 
 .link-warning {
+  --warning-surface: #2c261e;
   position: relative;
   isolation: isolate;
-  margin-inline-end: 2.125rem;
   padding: .85rem 1.15rem;
+  padding-inline-end: 4rem;
   border-inline-start: .25rem solid #edbd70;
   border-radius: .25rem;
-  background: #2c261e;
   color: #f4e6d2;
+}
+
+/* Give Hampter a lower ledge so the ears can peek out when the copy wraps. */
+.link-warning::before,
+.link-warning::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  background: var(--warning-surface);
+}
+.link-warning::before {
+  inset: 0 3.25rem 0 0;
+  border-radius: 0 .25rem 0 0;
+}
+.link-warning::after {
+  inset: auto 0 0 auto;
+  inline-size: 3.5rem;
+  block-size: 3.1rem;
+  border-radius: 0 .25rem .25rem 0;
 }
 .warning-hampter {
   position: absolute;
   inset-block-end: 0;
-  inset-inline-end: -3.1rem;
-  inline-size: 3.5rem;
+  inset-inline-end: .25rem;
+  inline-size: 3.25rem;
   pointer-events: none;
 }
 .link-warning > [data-locale] { position: relative; }
@@ -214,11 +233,13 @@ a:hover { text-decoration-thickness: .12em; }
 
 @media (min-width: 64rem) {
   .link-warning {
-    margin-inline-end: 0;
-    padding-inline-end: 8.6rem;
+    padding-inline-end: 9.75rem;
+    background: var(--warning-surface);
   }
+  .link-warning::before,
+  .link-warning::after { content: none; }
   .warning-hampter {
-    inset-inline-end: -.6rem;
+    inset-inline-end: .5rem;
     block-size: calc(100% + 1.5rem);
     max-block-size: 10.5rem;
     inline-size: auto;
