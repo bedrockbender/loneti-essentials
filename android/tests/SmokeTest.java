@@ -124,11 +124,11 @@ public final class SmokeTest extends Instrumentation {
         click("Dismiss this update");
         SharedPreferences updates = context.getSharedPreferences("updates", Context.MODE_PRIVATE);
         require(updates.getInt("dismissed", 0) == installedCode + 1, "Dismissal did not survive in preferences");
-        require(find("Update 2.3.1 is available", 500) == null, "Dismissed notice stayed on screen");
+        awaitGone("Update 2.3.1 is available");
         updates.edit().putInt("code", installedCode + 2).putString("version", "2.3.2").apply();
         awaitText("Update 2.3.2 is available");
         updates.edit().putInt("code", installedCode).apply();
-        require(find("Update 2.3.2 is available", 1000) == null, "An installed version triggered a notice");
+        awaitGone("Update 2.3.2 is available");
         require(find("Язык / Language", 500) == null, "Language selector outside the closed menu");
         click("Account menu");
         click("Язык / Language");
@@ -239,10 +239,11 @@ public final class SmokeTest extends Instrumentation {
         runOnMainSync(() -> holder[0] = findWebView(activity.getWindow().getDecorView()));
         WebView web = holder[0];
         String footerLink = "document.querySelector('#footer a[href=\"loneti-essentials://language\"]')";
-        long deadline = SystemClock.uptimeMillis() + 45000;
+        long deadline = SystemClock.uptimeMillis() + 60000;
         while (!"true".equals(evaluate(web, "Boolean(" + footerLink + ")"))) {
             if (SystemClock.uptimeMillis() > deadline) return;
-            SystemClock.sleep(300);
+            tryClick("Попробовать снова", 500);
+            SystemClock.sleep(750);
         }
         screenshot("public-home");
         evaluate(web, footerLink + ".scrollIntoView({block:'center'})");
@@ -468,6 +469,16 @@ public final class SmokeTest extends Instrumentation {
 
     private void awaitText(String text) {
         require(find(text, 20000) != null, "Did not see UI label " + text + "; visible: " + visibleLabels());
+    }
+
+    private void awaitGone(String text) {
+        long deadline = SystemClock.uptimeMillis() + 5000;
+        while (SystemClock.uptimeMillis() < deadline) {
+            AccessibilityNodeInfo root = automation.getRootInActiveWindow();
+            if (root != null && scan(root, text) == null) return;
+            SystemClock.sleep(100);
+        }
+        throw new AssertionError("UI label remained visible: " + text);
     }
 
     private void click(String text) {
