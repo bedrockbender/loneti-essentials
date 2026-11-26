@@ -1,9 +1,5 @@
 <resources>
     <string name="app_name">Loneti essentials</string>
-    <string name="more">Меню</string>
-    <string name="home">Главная LONETI</string>
-    <string name="library">Мои смайлы</string>
-    <string name="reload">Обновить</string>
     <string name="offline">Не удалось открыть LONETI</string>
     <string name="connection_help">Проверьте подключение к интернету и попробуйте ещё раз.</string>
     <string name="retry">Попробовать снова</string>

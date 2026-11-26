@@ -1,9 +1,5 @@
 <resources>
     <string name="app_name">Loneti essentials</string>
-    <string name="more">Menu</string>
-    <string name="home">LONETI home</string>
-    <string name="library">My emotes</string>
-    <string name="reload">Reload</string>
     <string name="offline">Couldn’t open LONETI</string>
     <string name="connection_help">Check your connection and try again.</string>
     <string name="retry">Try again</string>

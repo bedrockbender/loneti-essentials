@@ -1,23 +1,33 @@
-function installDrawingTools(surface) {
+function installDrawingTools(surface, toolbar, config) {
   const ru = (document.documentElement.lang || (location.hostname.endsWith('.ru') ? 'ru' : 'en')).toLowerCase().startsWith('ru');
   const tr = (en, russian) => ru ? russian : en;
   const host = document.createElement('div');
   host.dataset.lonetiEssentials = 'tools';
   host.style.cssText = 'position:absolute;inset:0;z-index:12;pointer-events:none';
   surface.append(host);
-  const root = host.attachShadow({mode:'open'});
-  const template = document.createElement('template');
-  template.innerHTML = TOOLS_TEMPLATE;
-  root.append(template.content.cloneNode(true));
+  const overlay = host.attachShadow({mode:'open'});
+  overlay.innerHTML = OVERLAY_TEMPLATE;
+  const pad = overlay.querySelector('canvas'), toast = overlay.querySelector('[role=status]');
+  const options = document.createElement('div');
+  options.dataset.lonetiEssentials = 'options';
+  options.hidden = true;
+  config.prepend(options);
+  const root = options.attachShadow({mode:'open'});
+  root.innerHTML = OPTIONS_TEMPLATE;
   for (const el of root.querySelectorAll('[data-ru]')) {
     if (ru) el.textContent = el.dataset.ru;
   }
-  root.host.lang = ru ? 'ru' : 'en';
+  options.lang = host.lang = ru ? 'ru' : 'en';
+  const buttons = createToolButtons(toolbar, tr, chooseTool);
+  const toolsContainer = toolbar.closest('#cont_tools') || toolbar;
+  const skin = document.createElement('style');
+  skin.textContent = TOOLBAR_STYLE;
+  document.head.append(skin);
   const q = s => root.querySelector(s);
-  const panel = q('.panel'), pad = q('canvas'), toast = q('[role=status]'), toggle = q('[data-menu]');
   const finishBtn = q('[data-finish]'), undoPt = q('[data-back]'), end = q('[data-end]');
-  const labels = { polygon:tr('Polygon','Многоугольник'), wand:tr('Magic wand','Волшебная палочка'), gradient:tr('Gradient','Градиент') };
+  const labels = Object.fromEntries(buttons.map(b => [b.dataset.leTool,b.getAttribute('aria-label')]));
   let tool = '', busy = false, editor = null, mask = null, nativeKey = null, handedOff = true;
+  let showSelection = false;
   let points = [], hover = null, drag = null, pointer = null, gradientLayer = null, edge = null, stencil = null;
   let wandBase, frame = 0, toastTimer;
   function notify(text) {
@@ -71,41 +81,51 @@ function installDrawingTools(surface) {
   function selectMask(next) {
     const ok = editor.setSelection(next);
     adoptMask(next, ok);
-    if (!ok) notify(tr('This selection applies to Gradient, Fill and Erase in Drawing tools.', 'Это выделение действует для градиента, заливки и стирания в наших инструментах.'));
+    if (!ok) notify(tr('This selection applies to Gradient, Fill selection and Erase selection.', 'Это выделение действует для градиента, заливки и стирания выделенной области.'));
     requestDraw();
   }
   function resetGesture() { points = []; hover = null; drag = null; pointer = null; wandBase = null; }
   function controls() {
-    toggle.setAttribute('aria-expanded', String(!panel.hidden));
-    q('[data-active]').textContent = labels[tool] || '';
-    finishBtn.hidden = undoPt.hidden = tool !== 'polygon';
+    options.hidden = !tool && !(showSelection && mask);
+    toolsContainer.toggleAttribute('data-le-custom-active', !!tool);
+    config.toggleAttribute('data-le-custom-active', !!tool);
+    q('[data-active]').textContent = labels[tool] || tr('Selection','Выделение');
+    q('[data-polygon-options]').hidden = finishBtn.hidden = undoPt.hidden = tool !== 'polygon';
     finishBtn.disabled = points.length < 3;
     undoPt.disabled = !points.length;
     end.hidden = !tool;
     pad.style.pointerEvents = tool ? 'auto' : 'none';
     pad.style.cursor = tool ? 'crosshair' : '';
-    for (const b of root.querySelectorAll('[data-tool]')) b.setAttribute('aria-pressed', String(b.dataset.tool === tool));
+    for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.leTool === tool));
+    q('[data-use]').hidden = !tool;
+    q('[data-selection-actions]').hidden = !mask;
     q('[data-wand-options]').hidden = tool !== 'wand';
     q('[data-gradient-options]').hidden = tool !== 'gradient';
-    q('[data-combine-label]').hidden = tool === 'gradient';
+    q('[data-combine-label]').hidden = tool !== 'polygon' && tool !== 'wand';
+  }
+  function closeMobilePalette() {
+    toolbar.closest('.content-mobile-menu')?.classList.remove('content-mobile-menu--show');
   }
   function chooseTool(next) {
-    if (busy) return;
     if (!next) {
       tool = '';
       resetGesture();
-      panel.hidden = true;
+      showSelection = false;
       notify('');
       controls(); requestDraw();
       return;
     }
+    if (busy) return;
     try {
       requireEditor();
-      resetGesture();
+      if (tool !== next) resetGesture();
       tool = next;
-      panel.hidden = next === 'polygon';
+      showSelection = false;
       controls();
-      if (next === 'polygon') notify(tr('Tap vertices, then tap Finish or the first point.', 'Касайтесь вершин, затем нажмите «Готово» или первую точку.'));
+      if (next === 'polygon') {
+        closeMobilePalette();
+        notify(tr('Tap vertices, then tap Finish or the first point.', 'Касайтесь вершин, затем нажмите «Готово» или первую точку.'));
+      }
       if (next === 'gradient' || next === 'wand') notify('');
       requestDraw();
     } catch (e) { failure(e); }
@@ -118,7 +138,7 @@ function installDrawingTools(surface) {
       requireEditor();
       const result = polygonMask(editor.width, editor.height, points);
       selectMask(combineMasks(mask, result, q('[data-combine]').value));
-      tool = ''; resetGesture(); controls(); requestDraw();
+      tool = ''; showSelection = true; resetGesture(); controls(); requestDraw();
       if (handedOff) notify(tr('Selection ready.', 'Выделение готово.'));
     } catch (e) { failure(e); }
   }
@@ -143,7 +163,6 @@ function installDrawingTools(surface) {
       const pixels = maskedPaint(source, mask, ctx => action === 'fill' ? q('[data-fill-color]').value :
         gradientPaint(ctx, preset.type, line.start, line.end, preset.stops), action === 'erase');
       await edit.commitLayer(pixels);
-      panel.hidden = true;
       if (action === 'gradient') notify(tr('Gradient applied.', 'Градиент применён.'));
     } catch (e) { failure(e); }
     finally { busy = false; controls(); requestDraw(); }
@@ -156,7 +175,7 @@ function installDrawingTools(surface) {
       pad.focus({preventScroll:true});
       pointer = event.pointerId; pad.setPointerCapture(pointer);
       const p = point(event);
-      panel.hidden = true; controls();
+      closeMobilePalette();
       if (tool === 'gradient') drag = { start:p, end:p };
       hover = p;
       requestDraw();
@@ -242,26 +261,23 @@ function installDrawingTools(surface) {
   for (const name of ['pointerdown','pointerup','mousedown','mousemove','mouseup','touchstart','touchmove','touchend','click','dblclick','contextmenu']) {
     host.addEventListener(name, e => e.stopPropagation());
   }
-  toggle.onclick = () => {
-    panel.hidden = !panel.hidden;
-    if (!panel.hidden) try { requireEditor(); } catch (e) { failure(e); }
-    controls();
-  };
-  for (const use of root.querySelectorAll('[data-use]')) use.onclick = () => {
-    panel.hidden = true;
+  q('[data-use]').onclick = () => {
+    closeMobilePalette();
     pad.focus({preventScroll:true});
-    controls();
   };
-  for (const b of root.querySelectorAll('[data-tool]')) b.onclick = () => chooseTool(b.dataset.tool);
   finishBtn.onclick = polygonDone;
   undoPt.onclick = () => { points.pop(); controls(); requestDraw(); };
-  end.onclick = () => chooseTool('');
+  end.onclick = () => {
+    const current = buttons.find(b => b.dataset.leTool === tool);
+    chooseTool('');
+    current?.focus({preventScroll:true});
+  };
   q('[data-tolerance]').oninput = () => { q('[data-tolerance-value]').textContent = q('[data-tolerance]').value; };
   q('[data-tolerance]').onchange = q('[data-contiguous]').onchange = q('[data-combine]').onchange = adjustWand;
   q('[data-erase]').onclick = () => void paint('erase');
   q('[data-fill]').onclick = () => void paint('fill');
   q('[data-clear]').onclick = () => {
-    try { requireEditor(); selectMask(null); wandBase = null; notify(''); } catch(e) { failure(e); }
+    try { requireEditor(); selectMask(null); wandBase = null; controls(); notify(''); } catch(e) { failure(e); }
   };
   const lifecycle = new AbortController();
   document.addEventListener('keydown', event => {
@@ -274,12 +290,31 @@ function installDrawingTools(surface) {
     else return;
     event.preventDefault(); event.stopImmediatePropagation();
   }, {capture:true, signal:lifecycle.signal});
-  document.addEventListener('click', event => {
-    if (event.target.closest?.('.one_tool[data-tool]') && tool) chooseTool('');
+  toolsContainer.addEventListener('click', event => {
+    if (event.target.closest?.('.one_tool[data-tool]:not(.one_tool--disabled)') && (tool || showSelection)) chooseTool('');
   }, {capture:true, signal:lifecycle.signal});
+  // LONETI also selects tools from keyboard shortcuts, including its brush palette.
+  const nativeSelection = new MutationObserver(records => {
+    if ((tool || showSelection) && records.some(({target,oldValue}) => target.matches('.one_tool[data-tool]') &&
+        target.classList.contains('active_tool') !== (oldValue || '').split(/\s+/).includes('active_tool'))) chooseTool('');
+  });
+  nativeSelection.observe(toolsContainer, {subtree:true,attributes:true,attributeFilter:['class'],attributeOldValue:true});
+  options.addEventListener('keydown', event => event.stopPropagation());
+  options.addEventListener('keyup', event => event.stopPropagation());
   surface.addEventListener('wheel', requestDraw, {passive:true,signal:lifecycle.signal});
   const resize = new ResizeObserver(requestDraw);
   resize.observe(surface);
   controls();
-  return () => { lifecycle.abort(); resize.disconnect(); cancelAnimationFrame(frame); clearTimeout(toastTimer); host.remove(); };
+  return {
+    mounted: () => toolbar.isConnected && config.isConnected && host.parentNode === surface &&
+      options.parentNode === config && buttons.every(b => b.parentNode === toolbar),
+    dispose() {
+      lifecycle.abort(); resize.disconnect(); nativeSelection.disconnect();
+      cancelAnimationFrame(frame); clearTimeout(toastTimer);
+      toolsContainer.removeAttribute('data-le-custom-active');
+      config.removeAttribute('data-le-custom-active');
+      buttons.forEach(b => b.remove());
+      options.remove(); host.remove(); skin.remove();
+    }
+  };
 }

@@ -24,7 +24,6 @@ import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.webkit.WebViewCompat;
@@ -64,8 +63,7 @@ public final class MainActivity extends Activity {
         } catch (IOException error) {
             throw new IllegalStateException("Missing bundled collector assets", error);
         }
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
+        FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.WHITE);
         if (Build.VERSION.SDK_INT >= 35) {
             root.setOnApplyWindowInsetsListener((v, insets) -> {
@@ -75,29 +73,10 @@ public final class MainActivity extends Activity {
                 return WindowInsets.CONSUMED;
             });
         }
-        LinearLayout bar = new LinearLayout(this);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setBackgroundColor(0xffe8efdf);
-        TextView title = new TextView(this);
-        title.setText(R.string.app_name);
-        title.setTextColor(0xff294d32);
-        title.setPadding(dp(16), 0, 0, 0);
-        title.setTextSize(17);
-        bar.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
-        Button menu = new Button(this, null, android.R.attr.borderlessButtonStyle);
-        menu.setText("⋮");
-        menu.setTextSize(24);
-        menu.setContentDescription(getString(R.string.more));
-        menu.setOnClickListener(this::openMenu);
-        bar.addView(menu, dp(52), dp(48));
-        root.addView(bar, -1, -2);
-
-        FrameLayout content = new FrameLayout(this);
-        root.addView(content, new LinearLayout.LayoutParams(-1, 0, 1));
         web = new WebView(this);
-        content.addView(web, -1, -1);
+        root.addView(web, -1, -1);
         errorPane = makeErrorPane();
-        content.addView(errorPane, -1, -1);
+        root.addView(errorPane, -1, -1);
         setContentView(root);
 
         WebSettings settings = web.getSettings();
@@ -153,24 +132,6 @@ public final class MainActivity extends Activity {
     private String currentOrigin() {
         String url = web.getUrl();
         return url == null ? null : siteOrigin(Uri.parse(url));
-    }
-
-    private void openMenu(View anchor) {
-        PopupMenu menu = new PopupMenu(this, anchor);
-        menu.getMenu().add(0, 1, 0, R.string.home);
-        menu.getMenu().add(0, 2, 1, R.string.library);
-        menu.getMenu().add(0, 3, 2, R.string.reload);
-        menu.setOnMenuItemClickListener(item -> {
-            String origin = currentOrigin();
-            if (origin == null) origin = homeOrigin();
-            switch (item.getItemId()) {
-                case 1: web.loadUrl(origin + "/"); break;
-                case 2: web.loadUrl(origin + "/settings?act=smiles"); break;
-                default: reload(); break;
-            }
-            return true;
-        });
-        menu.show();
     }
 
     private LinearLayout makeErrorPane() {

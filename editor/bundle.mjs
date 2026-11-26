@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 
 // Keep the install URL self-contained. Only replace the generated drawing-tools region.
 const dest = new URL('../loneti-smile-collector.user.js', import.meta.url);
-const modules = ['png.js', 'native.js', 'pixels.js', 'template.js', 'gradients.js', 'tools.js', 'mount.js'];
+const modules = ['png.js', 'native.js', 'pixels.js', 'template.js', 'toolbar.js', 'gradients.js', 'tools.js', 'mount.js'];
 const files = await Promise.all(modules.map(name => readFile(new URL(name,import.meta.url), 'utf8')));
 const begin = '// BEGIN bundled drawing tools', end = '// END bundled drawing tools';
 const current = await readFile(dest, 'utf8');
