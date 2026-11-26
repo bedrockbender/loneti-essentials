@@ -117,15 +117,30 @@ public final class SmokeTest extends Instrumentation {
         awaitText("Added to My emotes");
         click("Close");
         require(fixtureSite[0].saveCount() == 1, "Collector did not save exactly once");
-        click("Open already-owned Smile");
+        click("Open direct message");
         click("Add this Smile to My emotes");
         clickWebDialogButton(fixtureWeb[0], "Add to my Smiles");
         awaitText("Already added");
         awaitText("This Smile is already in Unsorted.");
         click("Close");
         require(fixtureSite[0].saveCount() == 1, "Already-owned Smile sent another save");
+        click("Open user Wall");
+        click("Add this Smile to My emotes");
+        clickWebDialogButton(fixtureWeb[0], "Add to my Smiles");
+        awaitText("Added to My emotes");
+        click("Close");
+        require(fixtureSite[0].saveCount() == 2, "Wall post did not save exactly once");
+        click("Show replies");
+        awaitJs(fixtureWeb[0], "!!document.querySelector('.wall-post__comments img[data-lsc-smile]')",
+                "the newly loaded Wall reply");
+        fixtureSite[0].rejectNextSave();
+        clickLast("Add this Smile to My emotes");
+        clickWebDialogButton(fixtureWeb[0], "Add to my Smiles");
+        awaitText("Unable to save");
+        click("Close");
+        require(fixtureSite[0].saveCount() == 2, "Rejected Wall reply changed the library");
         click("Open smoke library");
-        awaitText("Unsorted (2)");
+        awaitText("Unsorted (3)");
 
         Uri fixture = PackFixture.putInDownloads(context);
         try {
@@ -136,7 +151,7 @@ public final class SmokeTest extends Instrumentation {
             awaitText("Added: 1. Already in My emotes: 0.");
             click("Close");
             awaitText(PackFixture.NAME + " (1)");
-            require(fixtureSite[0].saveCount() == 2, "Expected one collector and one pack save");
+            require(fixtureSite[0].saveCount() == 3, "Expected two collector saves and one pack save");
 
             exportPack();
             awaitText("Save");
@@ -152,7 +167,7 @@ public final class SmokeTest extends Instrumentation {
             clickWebDialogButton(fixtureWeb[0], "Preview pack");
             awaitText(PackFixture.NAME);
             click("Cancel");
-            require(fixtureSite[0].saveCount() == 2, "Pack export and preview must not save a Smile");
+            require(fixtureSite[0].saveCount() == 3, "Pack export and preview must not save a Smile");
         } finally {
             context.getContentResolver().delete(fixture, null, null);
         }

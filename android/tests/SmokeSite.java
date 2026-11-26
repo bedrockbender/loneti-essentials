@@ -29,11 +29,14 @@ final class SmokeSite extends WebViewClient {
     private final Map<String, byte[]> assets = new LinkedHashMap<>();
     private final Map<String, String> items = new LinkedHashMap<>();
     private int saves;
+    private boolean rejectNextSave;
 
     SmokeSite(WebViewClient production) {
         this.production = production;
         assets.put("fixture", png(300, Color.RED));
         assets.put("comment", png(300, Color.GREEN));
+        assets.put("wall", png(300, Color.BLUE));
+        assets.put("reply", png(300, Color.YELLOW));
         items.put("101", "fixture");
     }
 
@@ -65,10 +68,19 @@ final class SmokeSite extends WebViewClient {
                     + "&&!Object.getOwnPropertyDescriptor(Object.prototype,'transform_canvas');");
         }
         if ("/pict400_100".equals(path)) {
-            return comment("comment", "<a href='/pict400_101'>Open already-owned Smile</a>");
+            return comment("comment", "<a href='/pm?u=42'>Open direct message</a>");
         }
-        if ("/pict400_101".equals(path)) {
-            return comment("fixture", "<a href='/settings?act=smiles'>Open smoke library</a>");
+        if ("/pm".equals(path)) {
+            return page("<a href='/fixture-wall'>Open user Wall</a><div id='list_msg'><div class='one_msg'>"
+                    + "<div class='smile_msg'><img src='/pic/smiles/fixture.png'></div></div></div>");
+        }
+        if ("/fixture-wall".equals(path)) {
+            return page("<a href='/settings?act=smiles'>Open smoke library</a>"
+                    + "<div id='list_comments' data-iduserwall='42'><div class='wall-post'>"
+                    + commentBody("wall")
+                    + "<button onclick='this.nextElementSibling.append(document.querySelector(\"template\").content.cloneNode(true));"
+                    + "this.disabled=true'>Show replies</button><div class='wall-post__comments'></div>"
+                    + "<template>" + commentBody("reply") + "</template></div></div>");
         }
         if ("/settings".equals(path) && "smiles".equals(url.getQueryParameter("act"))) {
             return library();
@@ -83,6 +95,7 @@ final class SmokeSite extends WebViewClient {
     }
 
     synchronized int saveCount() { return saves; }
+    synchronized void rejectNextSave() { rejectNextSave = true; }
 
     private static WebResourceResponse editor() {
         return page("<a href='/pict400_100'>Open smoke drawing</a>"
@@ -115,12 +128,20 @@ final class SmokeSite extends WebViewClient {
     }
 
     private static WebResourceResponse comment(String smile, String next) {
-        return page(next + "<div class='list_comments'><div class='one_comment'><div class='body_comment'>"
+        return page(next + "<div class='list_comments'>" + commentBody(smile) + "</div>");
+    }
+
+    private static String commentBody(String smile) {
+        return "<div class='one_comment'><div class='body_comment'>"
                 + "Smoke comment<div class='smile_body'><img src='/pic/smiles/" + smile + "-sm.png'>"
-                + "</div></div></div></div>");
+                + "</div></div></div>";
     }
 
     private WebResourceResponse save(String data) {
+        if (rejectNextSave) {
+            rejectNextSave = false;
+            return reply(403, "text/plain", new byte[0]);
+        }
         if (!data.startsWith("data:image/png;base64,")) return reply(400, "text/plain", new byte[0]);
         byte[] png = Base64.decode(data.substring(data.indexOf(',') + 1), Base64.DEFAULT);
         if (png.length < 24 || png[0] != (byte) 0x89 || png[1] != 'P'

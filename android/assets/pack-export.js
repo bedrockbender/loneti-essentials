@@ -1,5 +1,6 @@
 const saveAndroidSmilePack = (() => {
   'use strict';
+  if (location.pathname !== '/settings') return;
 
   const handshake = 'loneti-smile-pack-export-v1';
   const chunkBytes = 32 * 1024;

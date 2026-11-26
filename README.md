@@ -1,6 +1,6 @@
 # Loneti essentials
 
-Draw on LONETI with polygon and color selections and editable gradients. Collect Smiles from comments and rooms and share them with friends as packs. The Android app and Tampermonkey userscript include the same tools.
+Draw on LONETI with polygon and color selections and editable gradients. Collect Smiles from direct messages, Wall posts and replies, drawing comments, and room chats. Share them with friends as packs. The Android app and Tampermonkey userscript include the same tools.
 
 [Install Loneti essentials](https://bedrockbender.github.io/loneti-essentials/) · [Android releases](https://github.com/bedrockbender/loneti-essentials/releases) · [Report a bug](https://github.com/bedrockbender/loneti-essentials/issues/new)
 
@@ -10,7 +10,7 @@ Loneti essentials is an independent project for LONETI. Its original code and do
 
 1. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-essentials/#android-setup) on a phone or tablet running Android 8.0 or newer. Tap **Download for Android** and open the file.
 2. If Android asks, allow the browser or Files app that opened the download to **Install unknown apps**. Return to the installer and tap **Install**.
-3. Open **Loneti essentials** and sign in to LONETI. Tap a Smile in a comment or drawing room to preview it. Tap **Add to my Smiles** to keep it. Installing over the earlier Smile Collector APK preserves your app data.
+3. Open **Loneti essentials** and sign in to LONETI. Tap a Smile to preview it, then tap **Add to my Smiles** to keep it. To update, install the latest signed APK over your existing app to preserve your app data.
 
 The app uses Android System WebView and has its own LONETI sign-in session. Keep WebView up to date. Use **Download pack** and **Install pack** in My emotes to move a named pack between the app and your browser. Android opens its Files picker to choose where to save or which file to install.
 
@@ -18,7 +18,7 @@ The app uses Android System WebView and has its own LONETI sign-in session. Keep
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser. In Chrome, type `chrome://extensions` into a new tab. Find the Tampermonkey card, click **Details**, and turn on **Allow User Scripts**. In Edge, start at `edge://extensions`. If the switch is missing, enable **Developer mode** on the browser’s extensions list. Firefox users can go straight to step 2. [Tampermonkey permissions guide](https://www.tampermonkey.net/faq.php?locale=en&q=Q209)
 2. Choose **I'm a PC user** on the [installation page](https://bedrockbender.github.io/loneti-essentials/) to open **Use the browser userscript**. Choose **Install the userscript** and confirm in Tampermonkey. If the drawing tools miss the editor at startup, choose **UserScripts API Dynamic** under **Content Script API** in the Tampermonkey dashboard settings, then reload the drawing. [Tampermonkey startup modes](https://www.tampermonkey.net/documentation.php?q=content_script_api)
-3. Reload your LONETI drawing or room. Hover over a Smile to see its outline, then click it. You can also use **Tab** to focus it and **Enter** to open the preview. Choose **Cancel** or press **Esc** to leave the preview without saving.
+3. Reload your LONETI tab after installing or updating. Hover over a Smile to see its outline, then click it. You can also use **Tab** to focus it and **Enter** to open the preview. Choose **Cancel** or press **Esc** to leave the preview without saving.
 
 The userscript follows LONETI’s page language automatically. The installation guide starts in your browser’s preferred supported language and remembers your choice of **EN** or **Русский**.
 
@@ -49,7 +49,7 @@ Collecting, saving a Smile from its editor, and installing a pack check the acco
 - **While drawing**, check **Prevent copying this Smile** in the editor's save preview, then use the normal **Save** button.
 - **For an existing Smile**, open its pack on **My emotes** and toggle **Copy protection** beneath the picture. After you confirm, the script creates or reuses a matching edition in that pack, verifies its full-size image, then removes the old library entry. Earlier posts still reference the image used when they were sent.
 - **If you already have both editions**, switch on **Copy protection** on the unchecked copy. When the matching protected copy is in the same pack, the script reuses it. A small black lock with a white outline marks the protected Smile in the picker and preview.
-- **When collecting**, click a Smile in a comment or room, review the preview, and choose **Add to my Smiles**. The script checks the original 300×300 PNG. If only the thumbnail is available, collection is disabled because resizing can erase the preference.
+- **When collecting**, click the Smile itself in a direct message, a Wall post or reply, a drawing comment, or a room chat. Review the preview and choose **Add to my Smiles**. The script checks the original 300×300 PNG. If only the thumbnail is available, collection is disabled because resizing can erase the preference.
 
 The preference is a small mark in the least significant bits of the PNG pixels. This collector honors it when collecting, exporting, and installing. A pack download excludes protected Smiles and shows how many were skipped. Other software can still save or screenshot a visible image, and image processing can remove the mark. Password encryption protects the pack file until someone unlocks it. An authorized recipient can share the unlocked artwork.
 
@@ -74,4 +74,4 @@ Read-Host 'Keystore password' -AsSecureString | ConvertFrom-SecureString |
 
 The build verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-essentials.apk`. Android requires matching signing keys for an in-place update. Use a spare device or emulator to try a locally signed build if the official app is already installed.
 
-The [Android 2.1.2 source](https://github.com/bedrockbender/loneti-essentials/tree/android-v2.1.2) and [userscript 3.1.3 source](https://github.com/bedrockbender/loneti-essentials/tree/userscript-v3.1.3) are tagged at the same commit. Both include the room selection repaint fix.
+The [Android 2.2.0 source](https://github.com/bedrockbender/loneti-essentials/tree/android-v2.2.0) and [userscript 3.2.0 source](https://github.com/bedrockbender/loneti-essentials/tree/userscript-v3.2.0) are tagged at the same commit. Both include Smile collection from direct messages and user Walls.

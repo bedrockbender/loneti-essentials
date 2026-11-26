@@ -55,8 +55,7 @@ public final class MainActivity extends Activity {
         try {
             bootstrap = "(function(){'use strict';"
                     + "if(window!==window.top)return false;"
-                    + "if(!['https://loneti.art','https://loneti.ru'].includes(location.origin)"
-                    + "||!/^\\/(pict|chat|settings|draw)/.test(location.pathname))return false;"
+                    + "if(!['https://loneti.art','https://loneti.ru'].includes(location.origin))return false;"
                     + "if(window.__lonetiCollectorInstalled)return true;"
                     + asset("pack-export.js") + "\n" + asset("collector.user.js")
                     + "\nwindow.__lonetiCollectorInstalled=true;return true;})()";
@@ -205,15 +204,13 @@ public final class MainActivity extends Activity {
             if (failedUrl != null || url == null || !url.equals(view.getUrl())) return;
             Uri uri = Uri.parse(url);
             String origin = siteOrigin(uri);
-            String path = uri.getPath();
-            if (origin == null || path == null || !(path.startsWith("/pict")
-                    || path.startsWith("/chat") || path.startsWith("/settings") || path.startsWith("/draw"))) return;
+            if (origin == null) return;
             int document = navigation;
             String script = documentStartRegistered ? "window.__lonetiCollectorInstalled === true" : bootstrap;
             view.evaluateJavascript(script, result -> {
                 if (document != navigation || isDestroyed() || !origin.equals(currentOrigin())) return;
                 if ("true".equals(result)) {
-                    if (connectedDocument != document) {
+                    if ("/settings".equals(uri.getPath()) && connectedDocument != document) {
                         connectedDocument = document;
                         exporter.connect(view, origin);
                     }

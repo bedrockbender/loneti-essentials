@@ -32,22 +32,22 @@
       <div class="hero-copy">
         <h1 id="site-title">Loneti essentials</h1>
         <div data-locale="en-US">
-          <p class="intro">Draw on LONETI with selection and gradient tools. Save Smiles from comments and rooms and share them as packs.</p>
+          <p class="intro">Draw on LONETI with selection and gradient tools. Collect Smiles from direct messages, Walls, drawing comments and rooms, and share them as packs.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="https://github.com/bedrockbender/loneti-essentials/releases/latest/download/Loneti-essentials.apk">Download for Android</a>
             <a class="button button-secondary" href="#browser">I'm a PC user</a>
             <a class="button button-source" href="https://github.com/bedrockbender/loneti-essentials"><img src="./icons/github.svg" width="18" height="18" alt="">Source code</a>
           </div>
-          <p class="platform">Version 2.1.2 · Android 8.0 and newer</p>
+          <p class="platform">Version 2.2.0 · Android 8.0 and newer</p>
         </div>
         <div data-locale="ru-RU" lang="ru-RU" hidden>
-          <p class="intro">Рисуйте на LONETI с помощью выделения и градиентов. Сохраняйте смайлы из комментариев и чатов и делитесь наборами.</p>
+          <p class="intro">Рисуйте на LONETI с помощью выделения и градиентов. Собирайте смайлы из личных сообщений, со стен пользователей, из комментариев к рисункам и чатов комнат. Делитесь ими в наборах.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="https://github.com/bedrockbender/loneti-essentials/releases/latest/download/Loneti-essentials.apk">Скачать для Android</a>
             <a class="button button-secondary" href="#browser">Я сижу с компа!</a>
             <a class="button button-source" href="https://github.com/bedrockbender/loneti-essentials"><img src="./icons/github.svg" width="18" height="18" alt="">Исходный код</a>
           </div>
-          <p class="platform">Версия 2.1.2 · Android 8.0 и новее</p>
+          <p class="platform">Версия 2.2.0 · Android 8.0 и новее</p>
         </div>
       </div>
       <a class="hero-preview" data-locale="en-US" href="./screenshots/smile-packs.png" title="Open full-size screenshot">
@@ -120,8 +120,8 @@
               </li>
               <li>
                 <h2>Add the userscript</h2>
-                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Install the userscript (3.1.3)</a>
-                <p>Open the userscript link above, choose <strong>Install</strong> in Tampermonkey, and return here.</p>
+                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Install the userscript (3.2.0)</a>
+                <p>Open the link above and confirm the installation or update in Tampermonkey. Reload any open LONETI tabs.</p>
                 <details><summary>Enable early loading for the drawing tools</summary><p>Open the Tampermonkey menu in your browser toolbar, choose <strong>Dashboard</strong>, then <strong>Settings</strong>. Under <strong>Content Script API</strong>, choose <strong>UserScripts API Dynamic</strong>. If that option is hidden, switch the configuration mode to <strong>Advanced</strong>. Save and reload the drawing tab. This lets the tools start alongside LONETI’s editor. <a href="https://www.tampermonkey.net/documentation.php?q=content_script_api">Tampermonkey’s guide</a>.</p></details>
                 <details><summary>I see code instead of an Install button</summary><p>Check that Tampermonkey is enabled in your browser and that you finished step 1. Close the code tab and open the userscript link again. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Manual installation instructions</a>.</p></details>
               </li>
@@ -165,8 +165,8 @@
               </li>
               <li>
                 <h2>Добавьте скрипт</h2>
-                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Установить скрипт (3.1.3)</a>
-                <p>Откройте ссылку выше, нажмите <strong>«Установить»</strong> в окне Tampermonkey и вернитесь на эту страницу.</p>
+                <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Установить скрипт (3.2.0)</a>
+                <p>Откройте ссылку выше и подтвердите установку или обновление в Tampermonkey. Обновите открытые вкладки LONETI.</p>
                 <details><summary>Включить ранний запуск инструментов рисования</summary><p>Нажмите значок Tampermonkey на панели браузера, выберите <strong>«Панель управления»</strong> и откройте вкладку <strong>«Настройки»</strong>. В пункте <strong>Content Script API</strong> выберите <strong>UserScripts API Dynamic</strong>. Если этого пункта не видно, переключите режим настроек на расширенный. Сохраните изменения и обновите вкладку с рисунком. <a href="https://www.tampermonkey.net/documentation.php?locale=ru&amp;q=content_script_api">Справка Tampermonkey</a>.</p></details>
                 <details><summary>Вместо кнопки «Установить» вижу код</summary><p>Проверьте, что Tampermonkey включён в браузере и вы выполнили шаг 1. Закройте вкладку с кодом и ещё раз откройте ссылку установки скрипта. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Как установить скрипт вручную</a>.</p></details>
               </li>
@@ -268,7 +268,7 @@
         <section class="guide-section" id="collect">
           <div data-locale="en-US">
             <h2>Collect a Smile</h2>
-            <p>Tap a Smile in a drawing comment or room chat to open its preview. With a mouse, hover to see its outline and click it. With a keyboard, use <kbd>Tab</kbd> to focus the Smile and <kbd>Enter</kbd> to open it.</p>
+            <p>Tap the Smile itself in a direct message, a Wall post or reply, a drawing comment, or a room chat to open its preview. With a mouse, hover to see its outline and click it. With a keyboard, use <kbd>Tab</kbd> to focus the Smile and <kbd>Enter</kbd> to open it.</p>
             <figure class="guide-shot">
               <a href="./screenshots/collect-smile.png" title="Open full-size screenshot">
                 <img src="./screenshots/collect-smile.png" width="538" height="499" loading="lazy" decoding="async" alt="A horse Smile in the Russian collection preview, with Cancel and Add buttons">
@@ -279,7 +279,7 @@
           </div>
           <div data-locale="ru-RU" lang="ru-RU" hidden>
             <h2>Сохранение смайлов</h2>
-            <p>Коснитесь смайла в комментарии к рисунку или в чате комнаты, чтобы открыть предпросмотр. На компьютере наведите указатель на смайл и щёлкните по нему. С клавиатуры выберите смайл клавишей <kbd>Tab</kbd> и нажмите <kbd>Enter</kbd>.</p>
+            <p>Нажмите на сам смайл в личном сообщении, в записи или комментарии на стене, в комментарии к рисунку или в чате комнаты. Откроется предпросмотр. На компьютере наведите указатель на смайл и щёлкните по нему. С клавиатуры выберите смайл клавишей <kbd>Tab</kbd> и нажмите <kbd>Enter</kbd>.</p>
             <figure class="guide-shot">
               <a href="./screenshots/collect-smile.png" title="Открыть снимок в полном размере">
                 <img src="./screenshots/collect-smile.png" width="538" height="499" loading="lazy" decoding="async" alt="Предпросмотр смайла с лошадью и кнопки «Отмена» и «Добавить в Мои смайлы»">

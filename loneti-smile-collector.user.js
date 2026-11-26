@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Loneti essentials
 // @namespace    loneti-smile-collector
-// @version      3.1.3
+// @version      3.2.0
 // @homepageURL  https://bedrockbender.github.io/loneti-essentials/
 // @downloadURL  https://bedrockbender.github.io/loneti-essentials/loneti-smile-collector.user.js
 // @updateURL    https://bedrockbender.github.io/loneti-essentials/loneti-smile-collector.user.js
@@ -10,14 +10,8 @@
 // @license      MIT
 // @description  Draw with polygon and color selections and custom gradients. Collect Smiles and share named packs.
 // @description:ru Собирайте смайлы и делитесь наборами. Рисуйте с помощью выделения по многоугольнику и цвету и собственных градиентов.
-// @match        https://loneti.art/draw*
-// @match        https://loneti.ru/draw*
-// @match        https://loneti.art/pict*
-// @match        https://loneti.art/chat*
-// @match        https://loneti.ru/pict*
-// @match        https://loneti.ru/chat*
-// @match        https://loneti.art/settings*
-// @match        https://loneti.ru/settings*
+// @match        https://loneti.art/*
+// @match        https://loneti.ru/*
 // @grant        none
 // @noframes
 // @sandbox      raw
@@ -1408,6 +1402,14 @@ else startDrawingTools();
     return;
   }
 
+  const onSettings = location.pathname === '/settings';
+  const query = new URLSearchParams(location.search);
+  if (onSettings && query.get('new') !== 'smile' && query.get('act') !== 'smiles') return;
+  const drawingOrRoom = /^\/(?:pict|chat)/.test(location.pathname);
+  // Profiles use top-level usernames. The profile shell can precede the Wall posts.
+  if (!onSettings && !drawingOrRoom && !/^\/pm\/?$/.test(location.pathname) &&
+      !document.querySelector('.info_user, #list_comments[data-iduserwall], #list_comments .wall-post')) return;
+
   const russian = {
     "Add this Smile to My emotes": "Добавить этот смайл в «Мои смайлы»",
     "Smile image unavailable": "Изображение смайла недоступно",
@@ -1557,13 +1559,11 @@ else startDrawingTools();
 
   const smileSelector = [
     '.list_comments .one_comment .body_comment .smile_body > img',
+    '#list_comments .wall-post .one_comment .body_comment .smile_body > img',
     '#list_msg .one_msg .smile_msg > img',
   ].join(', ');
   const editorSize = 300;
   let currentDialog = null;
-  const onSettings = location.pathname === '/settings';
-  const query = new URLSearchParams(location.search);
-  if (onSettings && query.get('new') !== 'smile' && query.get('act') !== 'smiles') return;
 
   const style = document.createElement('style');
   style.textContent = `
@@ -3141,7 +3141,7 @@ else startDrawingTools();
 
 
   if (!onSettings) setupCollector();
-  if (profile) {
+  if (profile && (onSettings || drawingOrRoom)) {
     window.addEventListener('storage', event => {
       if (event.key === storageKey || event.key === null) document.dispatchEvent(new Event('lsc-packs-changed'));
     });
