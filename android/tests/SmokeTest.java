@@ -59,6 +59,7 @@ public final class SmokeTest extends Instrumentation {
             String output = shell("am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n " + launchName);
             require(output.contains("Status: ok") && !output.contains("Error:"), "Activity start failed: " + output.trim());
             awaitApp(target);
+            awaitText("Smile Collector");
             return;
         }
         Activity activity = startActivitySync(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -163,15 +164,15 @@ public final class SmokeTest extends Instrumentation {
     private void awaitWebViewFeatures(WebView web) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<String> features = new AtomicReference<>();
-        runOnMainSync(() -> web.evaluateJavascript("JSON.stringify({abort:typeof AbortSignal.any,"
+        runOnMainSync(() -> web.evaluateJavascript("JSON.stringify({abort:typeof AbortController,timeout:typeof AbortSignal.timeout,"
                 + "crypto:!!window.crypto?.subtle,locks:!!navigator.locks})", result -> {
                     features.set(result);
                     latch.countDown();
                 }));
         require(latch.await(10, TimeUnit.SECONDS), "WebView did not evaluate fixture capability check");
         String result = features.get();
-        require(result != null && result.contains("function") && !result.contains("false"),
-                "WebView lacks AbortSignal.any, Web Crypto, or Web Locks: " + result);
+        require(result != null && result.contains("function") && !result.contains("undefined") && !result.contains("false"),
+                "WebView lacks basic abort handling, Web Crypto, or Web Locks: " + result);
     }
 
     private String visibleLabels() {
@@ -218,7 +219,7 @@ public final class SmokeTest extends Instrumentation {
         long deadline = SystemClock.uptimeMillis() + 15000;
         while (SystemClock.uptimeMillis() < deadline) {
             AccessibilityNodeInfo root = automation.getRootInActiveWindow();
-            if (root != null && pkg.contentEquals(root.getPackageName())) return;
+            if (root != null && root.getPackageName() != null && pkg.contentEquals(root.getPackageName())) return;
             SystemClock.sleep(200);
         }
         throw new AssertionError("Could not verify the launcher screen for " + pkg);

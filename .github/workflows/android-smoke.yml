@@ -1,6 +1,11 @@
 name: Android emulator smoke
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Android release tag to test
+        default: android-v1.0.1
+        type: string
   push:
     paths:
       - '.github/workflows/android-smoke.yml'
@@ -20,7 +25,8 @@ jobs:
       - name: Download the signed Android release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release download android-v1.0.0 --pattern Loneti-Smile-Collector.apk --dir "$RUNNER_TEMP/loneti-apk"
+          RELEASE_TAG: ${{ inputs.release_tag || 'android-v1.0.1' }}
+        run: gh release download "$RELEASE_TAG" --pattern Loneti-Smile-Collector.apk --dir "$RUNNER_TEMP/loneti-apk"
       - name: Install smoke test SDK
         uses: android-actions/setup-android@v3
         with:
