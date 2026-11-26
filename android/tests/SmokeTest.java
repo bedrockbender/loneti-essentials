@@ -245,6 +245,8 @@ public final class SmokeTest extends Instrumentation {
             tryClick("Попробовать снова", 500);
             SystemClock.sleep(750);
         }
+        // A fresh guest session can show LONETI's own cookie notice over the footer.
+        tryClick("Хорошо!", 1500);
         screenshot("public-home");
         evaluate(web, footerLink + ".scrollIntoView({block:'center'})");
         awaitText("Язык / Language");
