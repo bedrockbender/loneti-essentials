@@ -1,9 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.bedrockbender.lonetismiles">
+    package="org.bedrockbender.lonetismiles" android:versionCode="2" android:versionName="1.0.1">
     <uses-permission android:name="android.permission.INTERNET" />
     <application android:label="@string/app_name" android:icon="@drawable/smile_icon"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:usesCleartextTraffic="false" android:allowBackup="false"
+        android:usesCleartextTraffic="false" android:allowBackup="false" android:enableOnBackInvokedCallback="false"
         android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"

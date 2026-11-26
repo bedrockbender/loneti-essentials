@@ -41,6 +41,10 @@ if (!(Test-Path -LiteralPath $keystore -PathType Leaf) -or
 }
 
 $manifest = Join-Path $PSScriptRoot 'AndroidManifest.xml'
+$manifestXml = [xml](Get-Content -LiteralPath $manifest -Raw)
+$androidNamespace = 'http://schemas.android.com/apk/res/android'
+$versionCode = $manifestXml.DocumentElement.GetAttribute('versionCode', $androidNamespace)
+$versionName = $manifestXml.DocumentElement.GetAttribute('versionName', $androidNamespace)
 $sourceRoot = Join-Path $PSScriptRoot 'src'
 $resources = Join-Path $PSScriptRoot 'res'
 $collector = Join-Path (Split-Path $PSScriptRoot -Parent) 'loneti-smile-collector.user.js'
@@ -67,7 +71,7 @@ try {
     Invoke-BuildTool $aapt2 @('compile', '--dir', $resources, '-o', $compiledResources)
     Invoke-BuildTool $aapt2 @('link', '-o', $unsignedApk, '-I', $androidJar, '--manifest', $manifest,
         '--java', $generated, '--min-sdk-version', '26', '--target-sdk-version', '35',
-        '--version-code', '1', '--version-name', '1.0.0', '-A', $assets, $compiledResources)
+        '-A', $assets, $compiledResources)
 
     $javaSources = @(Get-ChildItem -LiteralPath @($sourceRoot, $generated) -File -Filter '*.java' -Recurse |
         Sort-Object FullName | ForEach-Object FullName)
@@ -113,7 +117,8 @@ try {
     Invoke-BuildTool $zipalign @('-c', '-P', '16', '4', $signedApk)
     Invoke-BuildTool $java @('-jar', $apksigner, 'verify', '--verbose', '--print-certs', $signedApk)
     $badging = Invoke-BuildTool $aapt2 @('dump', 'badging', $signedApk)
-    if (!($badging -match "^package: name='org\.bedrockbender\.lonetismiles' versionCode='1' versionName='1\.0\.0'") -or
+    $identity = "package: name='org.bedrockbender.lonetismiles' versionCode='$versionCode' versionName='$versionName'"
+    if (!($badging -match ('^' + [regex]::Escape($identity))) -or
         ($badging -notcontains "minSdkVersion:'26'" -and $badging -notcontains "sdkVersion:'26'") -or
         $badging -notcontains "targetSdkVersion:'35'" -or
         !($badging -match '^launchable-activity:')) {

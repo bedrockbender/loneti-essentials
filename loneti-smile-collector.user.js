@@ -4,7 +4,7 @@
 // @name:ru-RU   Коллекция смайлов LONETI
 // @name:ru      Коллекция смайлов LONETI
 // @namespace    loneti-smile-collector
-// @version      2.2.1
+// @version      2.2.2
 // @homepageURL  https://bedrockbender.github.io/loneti-smile-collector/
 // @downloadURL  https://bedrockbender.github.io/loneti-smile-collector/loneti-smile-collector.user.js
 // @updateURL    https://bedrockbender.github.io/loneti-smile-collector/loneti-smile-collector.user.js
@@ -240,14 +240,17 @@
   }
 
   async function drawSource(url, canvas, signal, cache = 'default') {
-    const response = await fetch(url, {
-      credentials: 'same-origin', cache,
-      signal: AbortSignal.any([signal, AbortSignal.timeout(12000)]),
-    });
-    if (!response.ok) throw new LocalizedError(t('Smile image unavailable'));
-    const bitmap = await createImageBitmap(await response.blob());
+    signal.throwIfAborted();
+    const request = new AbortController();
+    const cancel = () => request.abort();
+    signal.addEventListener('abort', cancel, { once: true });
+    const timer = setTimeout(cancel, 12000);
+    let bitmap;
     try {
-      signal.throwIfAborted();
+      const response = await fetch(url, { credentials: 'same-origin', cache, signal: request.signal });
+      if (!response.ok) throw new LocalizedError(t('Smile image unavailable'));
+      bitmap = await createImageBitmap(await response.blob());
+      request.signal.throwIfAborted();
       const ctx = canvas.getContext('2d');
       const scale = Math.min(editorSize / bitmap.width, editorSize / bitmap.height);
       const width = Math.round(bitmap.width * scale);
@@ -258,7 +261,9 @@
       ctx.drawImage(bitmap, (editorSize - width) / 2, (editorSize - height) / 2, width, height);
       return bitmap.width === editorSize && bitmap.height === editorSize;
     } finally {
-      bitmap.close();
+      clearTimeout(timer);
+      signal.removeEventListener('abort', cancel);
+      bitmap?.close();
     }
   }
 
