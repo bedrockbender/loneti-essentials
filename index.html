@@ -23,33 +23,71 @@
   </header>
 
   <main id="top">
-    <div class="hero">
-      <div class="frame hero-grid">
-        <div class="hero-copy" data-locale="en-US">
-          <h1>Collect and share <em>Smiles.</em></h1>
-          <p>Save Smiles from LONETI comments and drawing rooms, sort them into packs, and send a pack to a friend.</p>
-          <div class="hero-actions">
-            <a class="button" href="./loneti-smile-collector.user.js">Install userscript</a>
-            <a class="text-link" href="#setup">Setup instructions</a>
+    <section class="hero" id="setup">
+      <div class="frame">
+        <div class="hero-grid">
+          <div class="hero-copy" data-locale="en-US">
+            <h1>Install <em>Smile Collector</em></h1>
+            <p>Collect Smiles on LONETI, organize them into packs, and share your packs with friends.</p>
+          </div>
+          <div class="hero-copy" data-locale="ru-RU" lang="ru-RU" hidden>
+            <h1>Установка <em>Smile Collector</em></h1>
+            <p>Сохраняйте смайлы на LONETI, собирайте их в наборы и делитесь наборами с друзьями.</p>
+          </div>
+          <div class="smile-stack" aria-hidden="true">
+            <span class="smile-card card-back"></span>
+            <span class="smile-card card-middle"></span>
+            <span class="smile-card card-front">
+              <span class="smile-face"></span>
+            </span>
           </div>
         </div>
-        <div class="hero-copy" data-locale="ru-RU" lang="ru-RU" hidden>
-          <h1>Собирайте смайлы <em>и делитесь ими.</em></h1>
-          <p>Сохраняйте смайлы из комментариев и чатов комнат для рисования LONETI, собирайте их в наборы и отправляйте друзьям.</p>
-          <div class="hero-actions">
-            <a class="button" href="./loneti-smile-collector.user.js">Установить скрипт</a>
-            <a class="text-link" href="#setup">Как установить</a>
-          </div>
+
+        <div data-locale="en-US">
+          <ol class="install-steps" aria-label="Installation steps">
+            <li>
+              <h2>Prepare your browser</h2>
+              <a class="button button-secondary" data-install-extension href="https://www.tampermonkey.net/" target="_blank" rel="noopener" aria-label="Install Tampermonkey (opens in a new tab)">Install Tampermonkey</a>
+              <p><strong>Chrome or Edge.</strong> In Tampermonkey’s extension settings, turn on <strong>Allow User Scripts</strong> (Chrome 138 and later). If the switch is missing, use <strong>Developer mode</strong> on the browser’s Extensions page. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q209">Official permissions guide</a>.</p>
+              <p><strong>Firefox.</strong> Install the <a href="https://www.tampermonkey.net/index.php?browser=firefox">Firefox add-on</a> and go straight to step 2.</p>
+            </li>
+            <li>
+              <h2>Add the userscript</h2>
+              <a class="button" href="./loneti-smile-collector.user.js">Install LONETI Smile Collector</a>
+              <p>Choose <strong>Install</strong> on Tampermonkey’s confirmation screen. The userscript requests no special Tampermonkey grants.</p>
+            </li>
+            <li>
+              <h2>Try your first Smile</h2>
+              <a class="button button-secondary" href="https://loneti.art/">Open LONETI</a>
+              <p>Reload any open LONETI tabs and sign in. Click a Smile in a drawing comment or room chat to open its preview.</p>
+            </li>
+          </ol>
+          <p class="setup-help">If you see source code, copy it into a new script in the Tampermonkey dashboard and save it. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Official manual installation guide</a>.</p>
         </div>
-        <div class="smile-stack" aria-hidden="true">
-          <span class="smile-card card-back"></span>
-          <span class="smile-card card-middle"></span>
-          <span class="smile-card card-front">
-            <span class="smile-face"></span>
-          </span>
+
+        <div data-locale="ru-RU" lang="ru-RU" hidden>
+          <ol class="install-steps" aria-label="Шаги установки">
+            <li>
+              <h2>Подготовьте браузер</h2>
+              <a class="button button-secondary" data-install-extension href="https://www.tampermonkey.net/" target="_blank" rel="noopener" aria-label="Установить Tampermonkey (откроется в новой вкладке)">Установить Tampermonkey</a>
+              <p><strong>Chrome или Edge.</strong> В настройках расширения Tampermonkey включите <strong>«Разрешить пользовательские скрипты»</strong> (<span lang="en-US">Allow User Scripts</span>, Chrome 138 и новее). Если переключателя нет, включите <strong>«Режим разработчика»</strong> на странице расширений. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q209">Официальная инструкция по разрешениям</a>.</p>
+              <p><strong>Firefox.</strong> Установите <a href="https://www.tampermonkey.net/index.php?browser=firefox">расширение для Firefox</a> и сразу переходите к шагу 2.</p>
+            </li>
+            <li>
+              <h2>Добавьте скрипт</h2>
+              <a class="button" href="./loneti-smile-collector.user.js">Установить LONETI Smile Collector</a>
+              <p>Нажмите <strong>«Установить»</strong> в окне подтверждения Tampermonkey. Скрипт не запрашивает специальных разрешений Tampermonkey.</p>
+            </li>
+            <li>
+              <h2>Попробуйте сохранить смайл</h2>
+              <a class="button button-secondary" href="https://loneti.ru/">Открыть LONETI</a>
+              <p>Перезагрузите открытые вкладки LONETI и войдите в аккаунт. Нажмите на смайл в комментарии к рисунку или в чате комнаты, чтобы открыть предпросмотр.</p>
+            </li>
+          </ol>
+          <p class="setup-help">Если открылся исходный код, скопируйте его в новый скрипт в панели Tampermonkey и сохраните. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Официальная инструкция по ручной установке</a>.</p>
         </div>
       </div>
-    </div>
+    </section>
 
     <div class="frame guide">
       <nav class="guide-nav" aria-label="On this page" data-locale="en-US">
@@ -68,37 +106,16 @@
       </nav>
 
       <div class="guide-content">
-        <section class="guide-section" id="setup">
-          <div data-locale="en-US">
-            <h2>Install with Tampermonkey</h2>
-            <ol>
-              <li>Install <a href="https://www.tampermonkey.net/">Tampermonkey</a> in your browser. For Firefox, use the regular <a href="https://www.tampermonkey.net/index.php?browser=firefox">Firefox add-on</a>.</li>
-              <li>On Chrome 138 and later, open Tampermonkey’s extension settings and turn on <strong>Allow User Scripts</strong>. If the switch is missing on Chrome or Edge, enable <strong>Developer mode</strong> on the browser’s Extensions page. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q209">Official permissions guide</a>.</li>
-              <li>Choose <strong>Install userscript</strong> above and select <strong>Install</strong> in Tampermonkey’s confirmation screen. Reload your LONETI tabs and sign in. The userscript follows the language of LONETI. This guide follows your browser language until you choose EN or Русский.</li>
-            </ol>
-            <p class="note">The userscript requests no special Tampermonkey grants. If your browser opens the source code instead of the installer, copy the file into a new script in the Tampermonkey dashboard and save it. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Official installation guide</a>.</p>
-          </div>
-          <div data-locale="ru-RU" lang="ru-RU" hidden>
-            <h2>Установка через Tampermonkey</h2>
-            <ol>
-              <li>Установите <a href="https://www.tampermonkey.net/">Tampermonkey</a> для своего браузера. Для Firefox используйте обычное <a href="https://www.tampermonkey.net/index.php?browser=firefox">расширение Firefox</a>.</li>
-              <li>В Chrome 138 и новее откройте настройки расширения Tampermonkey и включите <strong>«Разрешить пользовательские скрипты»</strong> (<span lang="en-US">Allow User Scripts</span>). Если в Chrome или Edge этого переключателя нет, включите <strong>«Режим разработчика»</strong> на странице расширений браузера. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q209">Официальная инструкция по разрешениям</a>.</li>
-              <li>Нажмите <strong>«Установить скрипт»</strong> выше и подтвердите установку кнопкой <strong>«Установить»</strong> в окне Tampermonkey. Перезагрузите вкладки LONETI и войдите в аккаунт. Язык скрипта совпадает с языком LONETI. Эта инструкция открывается на языке браузера, пока вы не выберете EN или Русский.</li>
-            </ol>
-            <p class="note">Скрипт не запрашивает специальных разрешений Tampermonkey. Если браузер открыл исходный код, скопируйте его в новый скрипт в панели Tampermonkey и сохраните. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Официальная инструкция по установке</a>.</p>
-          </div>
-        </section>
-
         <section class="guide-section" id="collect">
           <div data-locale="en-US">
             <h2>Collect a Smile</h2>
             <p>On a drawing comment or in a drawing-room chat, hover over a Smile to see its outline and click it. With a keyboard, use <kbd>Tab</kbd> to focus the Smile and <kbd>Enter</kbd> to open its preview.</p>
-            <p>Choose <strong>Add to my Smiles</strong> to save it to your account. Use <strong>Cancel</strong> or press <kbd>Esc</kbd> to close the preview. Collection requires the original 300 × 300 PNG so the script can check its copying preference.</p>
+            <p>Choose <strong>Add to my Smiles</strong> to save it to your account. Use <strong>Cancel</strong> or press <kbd>Esc</kbd> to close the preview. Collection requires the original 300 × 300 PNG so the script can check its copying preference. The userscript follows LONETI’s language.</p>
           </div>
           <div data-locale="ru-RU" lang="ru-RU" hidden>
             <h2>Сохранение смайлов</h2>
             <p>В комментарии к рисунку или в чате комнаты наведите указатель на смайл, чтобы увидеть рамку, и щёлкните по нему. С клавиатуры выберите смайл клавишей <kbd>Tab</kbd> и откройте предпросмотр клавишей <kbd>Enter</kbd>.</p>
-            <p>Нажмите <strong>Добавить в «Мои смайлы»</strong>, чтобы сохранить смайл в свой аккаунт. Чтобы закрыть предпросмотр, нажмите <strong>«Отмена»</strong> или клавишу <kbd>Esc</kbd>. Для сохранения нужен исходный PNG размером 300 × 300, чтобы скрипт мог проверить защиту от копирования.</p>
+            <p>Нажмите <strong>Добавить в «Мои смайлы»</strong>, чтобы сохранить смайл в свой аккаунт. Чтобы закрыть предпросмотр, нажмите <strong>«Отмена»</strong> или клавишу <kbd>Esc</kbd>. Для сохранения нужен исходный PNG размером 300 × 300, чтобы скрипт мог проверить защиту от копирования. Язык скрипта совпадает с языком LONETI.</p>
           </div>
         </section>
 

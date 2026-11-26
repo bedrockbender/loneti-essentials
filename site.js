@@ -7,6 +7,22 @@
   const localizedContent = document.querySelectorAll('[data-locale]');
   const supported = new Set(['en-US', 'ru-RU']);
 
+  // Keep the publisher's browser selector as the fallback on mobile and other browsers.
+  function extensionStore(agent) {
+    if (/Android|iPhone|iPad|Mobile/i.test(agent)) return null;
+    if (/\bEdg\//.test(agent)) return 'https://microsoftedge.microsoft.com/addons/detail/iikmkjmpaadaobahmlepeloendndfphd';
+    if (/\bFirefox\//.test(agent)) return 'https://addons.mozilla.org/firefox/addon/tampermonkey/';
+    if (/\bChrome\//.test(agent) && !/\bOPR\//.test(agent)) {
+      return 'https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo';
+    }
+    return null;
+  }
+
+  const store = extensionStore(navigator.userAgent || '');
+  if (store) {
+    for (const link of document.querySelectorAll('[data-install-extension]')) link.href = store;
+  }
+
   function preferredLanguage() {
     try {
       const saved = localStorage.getItem(preferenceKey);

@@ -126,14 +126,12 @@ a:hover { text-decoration-thickness: 2px; }
   grid-template-columns: minmax(0, 1.8fr) minmax(12rem, 1fr);
   align-items: center;
   gap: 2rem;
-  min-height: 22rem;
-  padding-block: clamp(2.75rem, 6vw, 5.25rem);
+  padding-block: 1rem;
 }
 
 .hero h1 {
-  max-width: 14ch;
   margin: 0;
-  font-size: clamp(2.35rem, 6vw, 4.5rem);
+  font-size: clamp(2.05rem, 5vw, 3.3rem);
   line-height: 1.02;
   letter-spacing: -.045em;
   overflow-wrap: break-word;
@@ -146,16 +144,57 @@ a:hover { text-decoration-thickness: 2px; }
 
 .hero p {
   max-width: 34rem;
-  margin: 1.15rem 0 1.45rem;
+  margin: .5rem 0 0;
   color: var(--muted);
   font-size: 1.1rem;
 }
 
-.hero-actions {
+.install-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .8rem;
+  margin: .2rem 0 0;
+  padding: 0;
+  list-style-position: inside;
+}
+
+.install-steps li {
+  padding: .95rem;
+  border: 1px solid #cdd9cd;
+  border-radius: .32rem;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.install-steps li::marker {
+  color: var(--green-dark);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.install-steps h2 {
+  display: inline;
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.install-steps .button {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .75rem 1.2rem;
+  width: fit-content;
+  margin-top: .65rem;
+}
+
+.install-steps p {
+  margin: .55rem 0 0;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.hero .setup-help {
+  max-width: none;
+  margin: .7rem 0 1rem;
+  font-size: .95rem;
 }
 
 .button {
@@ -173,13 +212,18 @@ a:hover { text-decoration-thickness: 2px; }
 }
 
 .button:hover { background: var(--green-dark); }
-.text-link { font-weight: 700; }
+.button-secondary {
+  background: #fff;
+  color: var(--green-dark);
+}
+
+.button-secondary:hover { background: var(--mint); }
 
 .smile-stack {
   position: relative;
   isolation: isolate;
   justify-self: center;
-  width: min(100%, 16.3rem);
+  width: min(100%, 8.5rem);
   aspect-ratio: 1;
 }
 
@@ -233,7 +277,7 @@ a:hover { text-decoration-thickness: 2px; }
   border-radius: 50%;
   background: #425845;
   box-shadow: .97em 0 #425845;
-  font-size: clamp(1.3rem, 3vw, 2.1rem);
+  font-size: 1.05rem;
   content: "";
 }
 
@@ -335,6 +379,10 @@ kbd {
   font-size: .9rem;
 }
 
+@media (max-width: 52rem) {
+  .install-steps { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 45rem) {
   .frame { width: calc(100% - 2rem); }
   .hero-grid { grid-template-columns: minmax(0, 1fr) minmax(8rem, .5fr); gap: 1rem; }
@@ -343,7 +391,7 @@ kbd {
 }
 
 @media (max-width: 34rem) {
-  .hero-grid { grid-template-columns: 1fr; min-height: auto; }
+  .hero-grid { grid-template-columns: 1fr; }
   .smile-stack { display: none; }
   .steps { grid-template-columns: 1fr; row-gap: .15rem; }
   .steps dd + dt { margin-top: .5rem; }
