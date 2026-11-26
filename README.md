@@ -6,21 +6,21 @@ Draw on LONETI with polygon and color selections and editable gradients. Collect
 
 1. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-smile-collector/#android-setup) on a phone or tablet running Android 8.0 or newer. Tap **Download for Android** and open the file.
 2. If Android asks, allow the browser or Files app that opened the download to **Install unknown apps**. Return to the installer and tap **Install**.
-3. Open **Loneti essentials** and sign in to LONETI. Tap a Smile in a comment or drawing room to preview it. Tap **Add to my Smiles** to keep it. The **⋮** menu opens **My emotes**. Installing over the earlier Smile Collector APK preserves your app data.
+3. Open **Loneti essentials** and sign in to LONETI. Tap a Smile in a comment or drawing room to preview it. Tap **Add to my Smiles** to keep it. Installing over the earlier Smile Collector APK preserves your app data.
 
 The app uses Android System WebView and has its own LONETI sign-in session. Keep WebView up to date. Use **Download pack** and **Install pack** in My emotes to move a named pack between the app and your browser. Android opens its Files picker to choose where to save or which file to install.
 
 ## Install with Tampermonkey
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser. In Chrome, type `chrome://extensions` into a new tab. Find the Tampermonkey card, click **Details**, and turn on **Allow User Scripts**. In Edge, start at `edge://extensions`. If the switch is missing, enable **Developer mode** on the browser’s extensions list. Firefox users can go straight to step 2. [Tampermonkey permissions guide](https://www.tampermonkey.net/faq.php?locale=en&q=Q209)
-2. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-smile-collector/#browser), expand **Use the browser userscript**, choose **Install the userscript**, and confirm in Tampermonkey. If the drawing tools miss the editor at startup, choose **UserScripts API Dynamic** under **Content Script API** in the Tampermonkey dashboard settings, then reload the drawing. [Tampermonkey startup modes](https://www.tampermonkey.net/documentation.php?q=content_script_api)
+2. Choose **I'm a PC user** on the [installation page](https://bedrockbender.github.io/loneti-smile-collector/) to open **Use the browser userscript**. Choose **Install the userscript** and confirm in Tampermonkey. If the drawing tools miss the editor at startup, choose **UserScripts API Dynamic** under **Content Script API** in the Tampermonkey dashboard settings, then reload the drawing. [Tampermonkey startup modes](https://www.tampermonkey.net/documentation.php?q=content_script_api)
 3. Reload your LONETI drawing or room. Hover over a Smile to see its outline, then click it. You can also use **Tab** to focus it and **Enter** to open the preview. Choose **Cancel** or press **Esc** to leave the preview without saving.
 
 The userscript follows LONETI’s page language automatically. The installation guide starts in your browser’s preferred supported language and remembers your choice of **EN** or **Русский**.
 
 ## Draw
 
-Open **Drawing tools** in a standalone drawing, room, Smile, or avatar editor and select an unlocked layer you can edit.
+Select an unlocked layer in a standalone drawing, room, Smile, or avatar editor. In LONETI’s tool palette, look for the polygon and wand beside the lasso and the gradient beside the paint bucket. Hover over an icon for its name and a short hint. On a phone, open the tools palette at the bottom of the editor. You can reopen it while drawing to adjust the active tool.
 
 - **Polygon** adds a vertex wherever you tap in the workspace, including outside the canvas. Tap the first vertex, press **Enter**, or choose **Finish** to close the shape. **Undo point** removes the last vertex. The selection is clipped to the canvas when you finish.
 - **Magic wand** selects colors on the active layer. Adjust **Tolerance** before or after tapping a pixel. Clear **Contiguous pixels only** to include matching islands. Both selection tools can replace, add to, subtract from, or intersect the current selection.
@@ -53,7 +53,7 @@ The preference is a small mark in the least significant bits of the PNG pixels. 
 
 After editing the drawing-tool sources under `editor/`, run `node editor/bundle.mjs` to rebuild the self-contained userscript. Use `node editor/bundle.mjs --check` to verify it is current. The original userscript installation URL and namespace are retained for existing installations.
 
-Run `node --test editor/pixels.test.mjs` for mask geometry and tolerance checks. With Node 22+, Chromium, and the saved reference editors available locally, `node tests/editor-ui.mjs` exercises the native Smile and avatar interfaces. Run `node tests/room-sync.mjs` to relay a full-canvas gradient between two local room editors and verify pixel equality, Undo, Redo, and rejection when the packet cannot fit.
+Run `node --test editor/pixels.test.mjs` for mask geometry and tolerance checks. With Node 22+, Chromium, and the saved reference editors available locally, `node tests/editor-ui.mjs` exercises the tool palette in the four drawing modes. Run `node tests/room-sync.mjs` to relay a full-canvas gradient between two local room editors and verify pixel equality, Undo, Redo, and rejection when the packet cannot fit.
 
 On the project's Windows build machine, run `./android/build.ps1` in PowerShell. The script uses JDK 21, Android SDK Platform 35, and Build-Tools 35.0.1. You can pass `-JavaHome`, `-AndroidSdk`, and `-SigningDirectory` to select other local installations. It verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-essentials.apk`.
 

@@ -127,6 +127,23 @@ a:hover { text-decoration-thickness: .12em; }
 }
 .button-secondary:hover { background: #35402e; }
 
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: .55rem;
+}
+
+.hero-actions .button { min-block-size: 3.5rem; }
+
+@media (max-width: 30rem) {
+  .hero-actions .button {
+    min-block-size: 3.15rem;
+    padding-inline: .75rem;
+    font-size: .94rem;
+  }
+}
+
 .platform {
   margin: .65rem 0 0;
   color: var(--muted);
@@ -161,6 +178,7 @@ a:hover { text-decoration-thickness: .12em; }
 
 .setup-panel {
   min-inline-size: 0;
+  scroll-margin-block-start: 1rem;
   border: 1px solid var(--line);
   border-radius: .85rem;
   background: var(--surface);
