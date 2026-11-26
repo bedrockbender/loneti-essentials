@@ -21,6 +21,36 @@ function Invoke-BuildTool {
     }
 }
 
+function Get-AndroidXDependency {
+    param([string]$Artifact, [string]$Sha256)
+
+    $name = Split-Path $Artifact -Leaf
+    $file = Join-Path $dependencyCache $name
+    if (!(Test-Path -LiteralPath $file -PathType Leaf) -or
+        (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $Sha256) {
+        $download = Join-Path $stage $name
+        Invoke-WebRequest -UseBasicParsing -Uri "https://dl.google.com/dl/android/maven2/$Artifact" -OutFile $download
+        if ((Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash -ne $Sha256) {
+            throw "SHA256 verification failed for $name."
+        }
+        Move-Item -LiteralPath $download -Destination $file -Force
+    }
+    return $file
+}
+
+function Expand-DependencyEntry {
+    param([string]$Archive, [string]$EntryName, [string]$Destination)
+
+    $zip = [IO.Compression.ZipFile]::OpenRead($Archive)
+    try {
+        $entry = $zip.GetEntry($EntryName)
+        if ($null -eq $entry) { throw "$EntryName is missing from $(Split-Path $Archive -Leaf)." }
+        [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $Destination)
+    } finally {
+        $zip.Dispose()
+    }
+}
+
 $buildTools = Join-Path $AndroidSdk "build-tools/$BuildToolsVersion"
 $androidJar = Join-Path $AndroidSdk 'platforms/android-35/android.jar'
 $java = Join-Path $JavaHome 'bin/java.exe'
@@ -48,21 +78,44 @@ $versionName = $manifestXml.DocumentElement.GetAttribute('versionName', $android
 $sourceRoot = Join-Path $PSScriptRoot 'src'
 $resources = Join-Path $PSScriptRoot 'res'
 $collector = Join-Path (Split-Path $PSScriptRoot -Parent) 'loneti-smile-collector.user.js'
-$extraAssets = Join-Path $PSScriptRoot 'assets'
+$packExport = Join-Path $PSScriptRoot 'assets/pack-export.js'
+$thirdPartyLicenses = Join-Path $PSScriptRoot 'licenses'
 $outputRoot = Join-Path $PSScriptRoot 'build'
-$outputApk = Join-Path $outputRoot 'Loneti-Smile-Collector.apk'
+$outputApk = Join-Path $outputRoot 'Loneti-essentials.apk'
+$dependencyCache = Join-Path $outputRoot 'dependencies'
 $stage = Join-Path $outputRoot ([Guid]::NewGuid().ToString('N'))
 $assets = Join-Path $stage 'assets'
 $generated = Join-Path $stage 'gen'
 $classes = Join-Path $stage 'classes'
 $dex = Join-Path $stage 'dex'
 
-New-Item -ItemType Directory -Path $assets, $generated, $classes, $dex -Force | Out-Null
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+New-Item -ItemType Directory -Path $assets, $generated, $classes, $dex, $dependencyCache -Force | Out-Null
 try {
-    if (Test-Path -LiteralPath $extraAssets -PathType Container) {
-        Get-ChildItem -LiteralPath $extraAssets -Force | Copy-Item -Destination $assets -Recurse -Force
+    $webkitAar = Get-AndroidXDependency 'androidx/webkit/webkit/1.9.0/webkit-1.9.0.aar' `
+        '27BC203135F05B984FC218D5A9C709F0949A19A488615F2349EBDCD9E6F722A2'
+    $coreAar = Get-AndroidXDependency 'androidx/core/core/1.1.0/core-1.1.0.aar' `
+        '76C7CFBE596FE3C09A6983BF1C89E889299C08AC9A3B52CE5182A088D056647E'
+    $annotations = Get-AndroidXDependency 'androidx/annotation/annotation/1.2.0/annotation-1.2.0.jar' `
+        '9029262BDDCE116E6D02BE499E4AFDBA21F24C239087B76B3B57D7E98B490A36'
+    $webkitJar = Join-Path $stage 'webkit.jar'
+    $webkitRules = Join-Path $stage 'webkit.proguard'
+    $coreJar = Join-Path $stage 'core.jar'
+    Expand-DependencyEntry $webkitAar 'classes.jar' $webkitJar
+    Expand-DependencyEntry $webkitAar 'proguard.txt' $webkitRules
+    Expand-DependencyEntry $coreAar 'classes.jar' $coreJar
+    $appRules = Join-Path $stage 'app.proguard'
+    @(
+        '-keep class org.bedrockbender.lonetismiles.MainActivity { *; }'
+        '-dontoptimize'
+        '-dontobfuscate'
+    ) | Set-Content -LiteralPath $appRules -Encoding ascii
+
+    Copy-Item -LiteralPath $packExport -Destination $assets
+    Copy-Item -LiteralPath $collector -Destination (Join-Path $assets 'collector.user.js')
+    foreach ($name in @('androidx-apache-2.0.txt', 'chromium-bsd.txt')) {
+        Copy-Item -LiteralPath (Join-Path $thirdPartyLicenses $name) -Destination $assets
     }
-    Copy-Item -LiteralPath $collector -Destination (Join-Path $assets 'collector.user.js') -Force
 
     $compiledResources = Join-Path $stage 'resources.zip'
     $unsignedApk = Join-Path $stage 'unsigned.apk'
@@ -76,18 +129,20 @@ try {
     $javaSources = @(Get-ChildItem -LiteralPath @($sourceRoot, $generated) -File -Filter '*.java' -Recurse |
         Sort-Object FullName | ForEach-Object FullName)
     if (!$javaSources.Count) { throw 'No Java sources found.' }
-    Invoke-BuildTool $javac (@('--release', '8', '-Xlint:-options', '-encoding', 'UTF-8', '-classpath', $androidJar,
+    $compileClasspath = [string]::Join([IO.Path]::PathSeparator, @($androidJar, $webkitJar, $coreJar, $annotations))
+    Invoke-BuildTool $javac (@('--release', '8', '-Xlint:-options', '-encoding', 'UTF-8', '-classpath', $compileClasspath,
         '-d', $classes) + $javaSources)
 
     $classFiles = @(Get-ChildItem -LiteralPath $classes -File -Filter '*.class' -Recurse |
         Sort-Object FullName | ForEach-Object FullName)
-    Invoke-BuildTool $java (@('-cp', $d8, 'com.android.tools.r8.D8', '--release', '--min-api', '26',
-        '--lib', $androidJar, '--output', $dex) + $classFiles)
+    # Shrink WebKit to the APIs this app uses. Core and annotations are compile classpath only.
+    Invoke-BuildTool $java (@('-cp', $d8, 'com.android.tools.r8.R8', '--release', '--min-api', '26',
+        '--lib', $androidJar, '--classpath', $coreJar, '--classpath', $annotations, '--pg-conf', $webkitRules,
+        '--pg-conf', $appRules, '--output', $dex, $webkitJar) + $classFiles)
     if (!(Test-Path -LiteralPath (Join-Path $dex 'classes.dex') -PathType Leaf)) {
-        throw 'D8 did not produce the primary DEX file.'
+        throw 'R8 did not produce the primary DEX file.'
     }
 
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
     $apk = [IO.Compression.ZipFile]::Open($unsignedApk, [IO.Compression.ZipArchiveMode]::Update)
     try {
         foreach ($file in Get-ChildItem -LiteralPath $dex -File -Filter 'classes*.dex' | Sort-Object Name) {
@@ -121,8 +176,10 @@ try {
     if (!($badging -match ('^' + [regex]::Escape($identity))) -or
         ($badging -notcontains "minSdkVersion:'26'" -and $badging -notcontains "sdkVersion:'26'") -or
         $badging -notcontains "targetSdkVersion:'35'" -or
+        $badging -notcontains "application-label:'Loneti essentials'" -or
+        $badging -notcontains "application-label-ru:'Loneti essentials'" -or
         !($badging -match '^launchable-activity:')) {
-        throw 'The APK manifest identity, versions, SDK levels or launcher are unexpected.'
+        throw 'The APK manifest identity, versions, SDK levels, labels or launcher are unexpected.'
     }
     $badging | Where-Object { $_ -match '^(package:|(?:minSdk|sdk|targetSdk)Version:|launchable-activity:)' }
 

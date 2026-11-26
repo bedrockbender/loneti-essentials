@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Коллекция смайлов</string>
+    <string name="app_name">Loneti essentials</string>
     <string name="more">Меню</string>
     <string name="home">Главная LONETI</string>
     <string name="library">Мои смайлы</string>
@@ -9,5 +9,5 @@
     <string name="retry">Попробовать снова</string>
     <string name="no_picker">На устройстве нет приложения для выбора файлов.</string>
     <string name="no_browser">На устройстве нет браузера для этой ссылки.</string>
-    <string name="update_engine">Для работы коллекции смайлов обновите Android System WebView или Chrome.</string>
+    <string name="update_engine">Для работы Loneti essentials обновите Android System WebView или Chrome.</string>
 </resources>

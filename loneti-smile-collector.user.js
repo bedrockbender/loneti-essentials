@@ -1,17 +1,15 @@
 // ==UserScript==
-// @name         LONETI Smile Collector
-// @name:en-US   LONETI Smile Collector
-// @name:ru-RU   Коллекция смайлов LONETI
-// @name:ru      Коллекция смайлов LONETI
+// @name         Loneti essentials
 // @namespace    loneti-smile-collector
-// @version      2.2.2
+// @version      3.0.0
 // @homepageURL  https://bedrockbender.github.io/loneti-smile-collector/
 // @downloadURL  https://bedrockbender.github.io/loneti-smile-collector/loneti-smile-collector.user.js
 // @updateURL    https://bedrockbender.github.io/loneti-smile-collector/loneti-smile-collector.user.js
-// @description  Collect Smiles, organize packs, share .lesp files, and mark Smiles to prevent copying through this collector.
-// @description:en-US Collect Smiles, organize packs, share .lesp files, and mark Smiles to prevent copying through this collector.
-// @description:ru-RU Собирайте смайлы, создавайте наборы, обменивайтесь файлами .lesp и помечайте смайлы, чтобы запретить копирование через этот скрипт.
-// @description:ru Собирайте смайлы, создавайте наборы, обменивайтесь файлами .lesp и помечайте смайлы, чтобы запретить копирование через этот скрипт.
+// @icon         https://bedrockbender.github.io/loneti-smile-collector/icon.svg
+// @description  Draw with polygon and color selections and custom gradients. Collect Smiles and share named packs.
+// @description:ru Собирайте смайлы и делитесь наборами. Рисуйте с помощью выделения по многоугольнику и цвету и собственных градиентов.
+// @match        https://loneti.art/draw*
+// @match        https://loneti.ru/draw*
 // @match        https://loneti.art/pict*
 // @match        https://loneti.art/chat*
 // @match        https://loneti.ru/pict*
@@ -20,11 +18,1224 @@
 // @match        https://loneti.ru/settings*
 // @grant        none
 // @noframes
-// @run-at       document-idle
+// @sandbox      raw
+// @run-at       document-start
 // ==/UserScript==
 
+// BEGIN bundled drawing tools
 (() => {
+'use strict';
+// Lossless fallback for native room snapshots too large for Engine.IO.
+const roomPngCrcTable = Uint32Array.from({ length: 256 }, (_, value) => {
+  let crc = value;
+  for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+  return crc >>> 0;
+});
+
+function roomPngChunk(type, payload) {
+  const result = new Uint8Array(payload.length + 12);
+  const view = new DataView(result.buffer);
+  view.setUint32(0, payload.length);
+  result.set(new TextEncoder().encode(type), 4);
+  result.set(payload, 8);
+  let crc = 0xffffffff;
+  for (let i = 4; i < result.length - 4; i++) crc = (crc >>> 8) ^ roomPngCrcTable[(crc ^ result[i]) & 255];
+  view.setUint32(result.length - 4, crc ^ 0xffffffff);
+  return result;
+}
+
+function roomPngDataUrl(bytes) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 8192) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  }
+  return 'data:image/png;base64,' + btoa(binary);
+}
+
+function roomPngScanlines(pixels) {
+  const { data, width, height } = pixels;
+  let channels = 3;
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] !== 255) { channels = 4; break; }
+  }
+  const stride = width * channels;
+  const scanlines = new Uint8Array(height * (stride + 1));
+  const sub = new Uint8Array(stride);
+  const up = new Uint8Array(stride);
+  for (let y = 0; y < height; y++) {
+    let subScore = 0;
+    let upScore = 0;
+    for (let x = 0; x < width; x++) {
+      const source = (y * width + x) * 4;
+      for (let channel = 0; channel < channels; channel++) {
+        const i = x * channels + channel;
+        const pixel = source + channel;
+        const horizontal = data[pixel] - (x ? data[pixel - 4] : 0);
+        const vertical = data[pixel] - (y ? data[pixel - width * 4] : 0);
+        sub[i] = horizontal;
+        up[i] = vertical;
+        subScore += Math.abs(horizontal);
+        upScore += Math.abs(vertical);
+      }
+    }
+    const offset = y * (stride + 1);
+    scanlines[offset] = subScore <= upScore ? 1 : 2;
+    scanlines.set(subScore <= upScore ? sub : up, offset + 1);
+  }
+  return { scanlines, channels };
+}
+
+async function compactRoomPng(pixels) {
+  if (typeof CompressionStream !== 'function') return null;
+  const { scanlines, channels } = roomPngScanlines(pixels);
+  const compressed = new Blob([scanlines]).stream().pipeThrough(new CompressionStream('deflate'));
+  const imageBytes = new Uint8Array(await new Response(compressed).arrayBuffer());
+  const header = new Uint8Array(13);
+  const view = new DataView(header.buffer);
+  view.setUint32(0, pixels.width);
+  view.setUint32(4, pixels.height);
+  header[8] = 8;
+  header[9] = channels === 3 ? 2 : 6;
+  const blob = new Blob([
+    new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
+    roomPngChunk('IHDR', header),
+    roomPngChunk('IDAT', imageBytes),
+    roomPngChunk('IEND', new Uint8Array()),
+  ], { type: 'image/png' });
+  return { blob, dataUrl: roomPngDataUrl(new Uint8Array(await blob.arrayBuffer())) };
+}
+
+// LONETI constructs the editor in a private bundle closure before DOM-ready handlers run.
+// Observe that one initialization field in the page realm, then immediately restore Object.prototype.
+let nativeEditorEngine;
+const nativeEditorField = 'transform_canvas';
+const nativeEditorRoute = /^\/(?:draw|chat)(?:\/|$)/.test(location.pathname) ||
+  (location.pathname === '/settings' && ['smile', 'avatar'].includes(new URLSearchParams(location.search).get('new')));
+
+function observeNativeEditor() {
+  const prototype = Object.prototype;
+  if (!nativeEditorRoute || Object.hasOwn(prototype, nativeEditorField)) return;
+  const stop = () => {
+    if (Object.getOwnPropertyDescriptor(prototype, nativeEditorField)?.set === observeAssignment) {
+      delete prototype[nativeEditorField];
+    }
+  };
+  function observeAssignment(value) {
+    Object.defineProperty(this, nativeEditorField, {
+      value, writable: true, enumerable: true, configurable: true,
+    });
+    if (typeof this.realCoords === 'function' &&
+        typeof this.drawing_area?.getContainerWork === 'function' &&
+        typeof this.users_canvas?.getMyUser === 'function' &&
+        typeof this.layer_actions?.checkLockLayer === 'function' &&
+        typeof value?.coordsToDisplay === 'function' &&
+        typeof value.transform?.getInverted === 'function') {
+      nativeEditorEngine = this;
+      stop();
+    }
+  }
+  Object.defineProperty(prototype, nativeEditorField, {
+    set: observeAssignment, configurable: true,
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!document.querySelector('.js--work-canvas')) stop();
+  }, { once: true });
+  // A chat may be text-only. Never retain an observer indefinitely on such a page.
+  setTimeout(stop, 60000);
+}
+
+observeNativeEditor();
+
+function nativeEditorMode(engine) {
+  if (engine.key_storage === 'smile' || engine.key_storage === 'avatar') return engine.key_storage;
+  return engine.DEFAULT_INDEX_LAYER !== undefined && engine.parent_context ? 'room' : 'drawing';
+}
+
+function nativeEditorRoom(engine, mode) {
+  if (mode === 'room') return engine.parent_context;
+  if (mode === 'drawing' && engine.getIdCanvas?.()) return engine.msg_chat;
+  return null;
+}
+
+function editorFailure(code) {
+  const error = new Error(code);
+  error.editorCode = code;
+  return error;
+}
+
+function activeNativeLayer(engine) {
+  const user = engine?.users_canvas.getMyUser();
+  const layer = user?.user_layers?.getActiveLayer();
+  return { user, layer };
+}
+
+function checkNativeEdit(engine, user, layer, canvas, width, height, mode) {
+  const current = activeNativeLayer(engine);
+  if (current.user !== user || current.layer !== layer ||
+      layer.$layer !== canvas || canvas.width !== width || canvas.height !== height) {
+    throw editorFailure('layerChanged');
+  }
+  const index = layer.index;
+  const id = user.getIdUser();
+  if (typeof user.checkMyUser !== 'function' || !user.checkMyUser() ||
+      engine.list_layers.getLayerOnId(id, index) !== layer ||
+      layer.params?.hide || engine.layer_actions.checkLockLayer(id, index) ||
+      user.user_events?.getIsLock?.()) {
+    throw editorFailure('layerUnavailable');
+  }
+  const tool = user.tools_draw?.getCurTool?.();
+  if (tool?.is_draw?.start && !tool.is_draw.finish || tool?.checkTransformLayer?.()) {
+    throw editorFailure('editorBusy');
+  }
+  const room = nativeEditorRoom(engine, mode);
+  const sender = engine.draw_users?.send_actions;
+  if (room && (!id || !room.is_connect_draw || !room.socket?.connected ||
+      typeof sender?.getActionsChat !== 'function' ||
+      typeof engine.history_actions?.actionHistoryRepeat !== 'function' ||
+      typeof user.states_history?.getStateRepeat !== 'function' ||
+      (mode === 'room' && index !== engine.DEFAULT_INDEX_LAYER))) {
+    throw editorFailure('roomUnavailable');
+  }
+  return room;
+}
+
+// Socket.IO 4 documents this server default when its Engine.IO handshake
+// does not provide a usable maxPayload.
+const nativeEditorDefaultMaxPayload = 1_000_000;
+const nativeEditorContours = new WeakMap();
+const nativeEditorOutlineRenderers = new WeakSet();
+const nativeEditorCompactSnapshots = new WeakMap();
+
+function installNativeOutlineRenderer(tool) {
+  if (nativeEditorOutlineRenderers.has(tool)) return;
+  const drawLines = tool.drawLines;
+  tool.drawLines = function (points) {
+    const contours = nativeEditorContours.get(points);
+    if (!contours || !this.user_context.checkMyUser()) return drawLines.call(this, points);
+    this.clearCanvas();
+    for (const contour of contours) {
+      const scaled = this.scalePointsSelection(contour);
+      this.drawColorLines(scaled, 8, 0, 'rgba(0,0,0,1)');
+      this.drawColorLines(scaled, 8, -8, 'rgba(255,255,255,1)');
+    }
+  };
+  nativeEditorOutlineRenderers.add(tool);
+}
+
+function checkNativeRoomSnapshot(engine, room, user, layer, imageUrl, points, toolName, undo = false) {
+  const socket = room.socket;
+  const advertised = socket.io?.engine?.maxPayload;
+  const maxPayload = Number.isSafeInteger(advertised) && advertised > 0
+    ? advertised : nativeEditorDefaultMaxPayload;
+  if (imageUrl.length > maxPayload) throw editorFailure('roomLimit');
+
+  // Measure the real UTF-8 JSON shape before changing pixels. The native
+  // sender can batch pending strokes with the history state in one packet.
+  // Undo is a future action. Its snapshot must fit in a fresh native batch.
+  const actions = undo ? [] : engine.draw_users.send_actions.getActionsChat();
+  const state = {
+    type_state: user.states_history.STATE_DRAW,
+    data: { index_layer: layer.index, image: {}, image_src: imageUrl,
+      points_selection: points || undefined, tool_selection: toolName },
+  };
+  const frame = JSON.stringify(['actions', {
+    id_canvas: engine.getIdCanvas?.() || undefined,
+    actions: [...actions, ...(!points ? [{ event: 'reset_selection' }] : []),
+      { event: undo ? 'history_abort' : 'history_repeat', data: state }],
+  }]);
+  // Prefix packet type, namespace and Engine.IO framing just as the site does.
+  const bytes = new TextEncoder().encode(frame).length + new TextEncoder().encode(socket.nsp || '/').length + 8;
+  if (bytes > maxPayload) {
+    throw editorFailure('roomLimit');
+  }
+}
+
+function nativeRoomSnapshotFits(...args) {
+  try {
+    checkNativeRoomSnapshot(...args);
+    return true;
+  } catch (error) {
+    if (error.editorCode !== 'roomLimit') throw error;
+    return false;
+  }
+}
+
+function setNativeCompactSnapshot(snapshot, layerCanvas, compact) {
+  const nativeDataUrl = snapshot.toDataURL;
+  const nativeBlob = snapshot.toBlob;
+  Object.defineProperties(snapshot, {
+    toDataURL: {
+      value(type, ...options) {
+        return !type || type === 'image/png'
+          ? compact.dataUrl : nativeDataUrl.call(this, type, ...options);
+      },
+    },
+    toBlob: {
+      value(callback, type, ...options) {
+        if (!type || type === 'image/png') queueMicrotask(() => callback(compact.blob));
+        else nativeBlob.call(this, callback, type, ...options);
+      },
+    },
+  });
+  nativeEditorCompactSnapshots.set(snapshot, { compact, layerCanvas });
+}
+
+function recordNativeEditorDraw(user, history, compact) {
+  if (!compact) {
+    user.events_draw.setDraw();
+    return;
+  }
+  // Native Redo uses image.toDataURL() on the history canvas each time.
+  // The room's checkpoint also calls toBlob() on that same snapshot.
+  const descriptor = Object.getOwnPropertyDescriptor(history, 'createStateCanvas');
+  const createStateCanvas = history.createStateCanvas;
+  Object.defineProperty(history, 'createStateCanvas', {
+    configurable: true,
+    value: function (layerCanvas) {
+      const snapshot = createStateCanvas.call(this, layerCanvas);
+      setNativeCompactSnapshot(snapshot, layerCanvas, compact);
+      return snapshot;
+    },
+  });
+  try {
+    user.events_draw.setDraw();
+  } finally {
+    if (descriptor) Object.defineProperty(history, 'createStateCanvas', descriptor);
+    else delete history.createStateCanvas;
+  }
+}
+
+function existingNativeCompactSnapshot(history, layer) {
+  const state = history.getCurrentState();
+  if (state?.type_state !== history.STATE_DRAW || state.data?.index_layer !== layer.index) return null;
+  const image = state.data.image;
+  const entry = nativeEditorCompactSnapshots.get(image);
+  const canvas = layer.$layer;
+  if (!entry || entry.layerCanvas !== canvas || image.width !== canvas.width || image.height !== canvas.height) return null;
+  const saved = image.getContext('2d').getImageData(0, 0, image.width, image.height).data;
+  const current = layer.ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  return current.some((byte, index) => byte !== saved[index]) ? null : entry.compact;
+}
+
+function nativeEditorPublishHistory(engine, user, history) {
+  const state = history.getCurrentState();
+  const cursor = history.current_index;
+  if (state?.type_state !== history.STATE_DRAW || !Number.isInteger(cursor)) {
+    throw editorFailure('editorUnavailable');
+  }
+  const contours = nativeEditorContours.get(user.events_draw.getSelectionPoints());
+  // Replay the new, already-recorded native edit through the same action as
+  // the Redo button. No Undo is emitted, and the native history remains at
+  // the new state so the edit is one step for the user.
+  history.current_index = cursor - 1;
+  try {
+    if (history.getStateRepeat() !== state) throw editorFailure('editorUnavailable');
+    engine.history_actions.actionHistoryRepeat();
+  } finally {
+    history.current_index = cursor;
+  }
+  const points = user.events_draw.getSelectionPoints();
+  if (contours && points) {
+    const lasso = user.tools_draw.getToolByName('lasso').tool;
+    nativeEditorContours.set(points, contours);
+    lasso.drawLines(points);
+  }
+}
+
+function getNativeEditor() {
+  const engine = nativeEditorEngine;
+  if (!engine?.transform_canvas?.transform) return null;
+  const surface = engine.drawing_area.getContainerWork();
+  const { user, layer } = activeNativeLayer(engine);
+  const canvas = layer?.$layer;
+  if (!surface?.isConnected || !canvas?.width || !canvas.height ||
+      typeof layer.ctx?.getImageData !== 'function' ||
+      typeof user.events_draw?.setDraw !== 'function') return null;
+  const width = canvas.width;
+  const height = canvas.height;
+  const mode = nativeEditorMode(engine);
+  const ensureEdit = () => checkNativeEdit(engine, user, layer, canvas, width, height, mode);
+  const history = user.states_history;
+
+  return {
+    canvas, layerKey: canvas, surface, mode, width, height,
+    clientToCanvas(clientX, clientY) {
+      const rect = surface.getBoundingClientRect();
+      return engine.transform_canvas.transform.getInverted().getTransformedPoint({
+        x: clientX - rect.left, y: clientY - rect.top,
+      });
+    },
+    canvasToClient(x, y) {
+      const rect = surface.getBoundingClientRect();
+      const point = engine.transform_canvas.coordsToDisplay({ x, y });
+      return { x: point.x + rect.left, y: point.y + rect.top };
+    },
+    readLayer() {
+      ensureEdit();
+      return layer.ctx.getImageData(0, 0, width, height);
+    },
+    async commitLayer(imageData) {
+      const room = ensureEdit();
+      if (!(imageData instanceof ImageData) || imageData.width !== width || imageData.height !== height) {
+        throw editorFailure('layerChanged');
+      }
+      const previous = history.getCurrentState();
+      const priorDraw = previous?.type_state === history.STATE_DRAW && previous.data?.index_layer === layer.index
+        && previous.data.image?.width === width && previous.data.image.height === height
+        ? previous.data : null;
+      let compact;
+      let compactUndo;
+      if (room) {
+        const copy = document.createElement('canvas');
+        copy.width = width;
+        copy.height = height;
+        const context = copy.getContext('2d');
+        context.putImageData(imageData, 0, 0);
+        const points = user.events_draw.getSelectionPoints?.();
+        const toolName = user.events_draw.getNameSelectionTool?.();
+        const undoImage = priorDraw?.image || history.createStateCanvas(canvas);
+        const undoPoints = priorDraw ? priorDraw.points_selection : points;
+        const undoTool = priorDraw ? priorDraw.tool_selection : toolName;
+        const undoCompact = nativeEditorCompactSnapshots.get(undoImage)?.compact;
+        const undoUrl = undoCompact?.dataUrl || priorDraw?.image_src || undoImage.toDataURL('image/png');
+        const nextUrl = copy.toDataURL('image/png');
+        const canUndo = nativeRoomSnapshotFits(engine, room, user, layer, undoUrl, undoPoints, undoTool, true);
+        const canApply = nativeRoomSnapshotFits(engine, room, user, layer, nextUrl, points, toolName);
+        if (!canUndo || !canApply) {
+          // A previously compacted native snapshot is already our best
+          // encoding. Changing transport budgets can make that Undo unsafe.
+          if (!canUndo && undoCompact) throw editorFailure('roomLimit');
+          const cursor = history.current_index;
+          const socket = room.socket;
+          const connectionId = socket.id;
+          const transport = socket.io?.engine;
+          const selection = JSON.stringify(points);
+          const baseline = layer.ctx.getImageData(0, 0, width, height).data;
+          // Read the exact canonical pixels from the browser's canvas rather
+          // than the caller's potentially non-canonical transparent pixels.
+          const candidate = canApply ? null : context.getImageData(0, 0, width, height);
+          [compact, compactUndo] = await Promise.all([
+            candidate ? compactRoomPng(candidate) : null,
+            canUndo ? null : compactRoomPng(undoImage.getContext('2d').getImageData(0, 0, width, height)),
+          ]);
+          if (ensureEdit() !== room || room.socket !== socket || socket.id !== connectionId ||
+              socket.io?.engine !== transport) throw editorFailure('roomUnavailable');
+          if (history.getCurrentState() !== previous || history.current_index !== cursor ||
+              JSON.stringify(user.events_draw.getSelectionPoints?.()) !== selection ||
+              user.events_draw.getNameSelectionTool?.() !== toolName ||
+              layer.ctx.getImageData(0, 0, width, height).data.some((byte, index) => byte !== baseline[index])) {
+            throw editorFailure('layerChanged');
+          }
+          checkNativeRoomSnapshot(engine, room, user, layer, compactUndo?.dataUrl || undoUrl, undoPoints, undoTool, true);
+          checkNativeRoomSnapshot(engine, room, user, layer, compact?.dataUrl || nextUrl, points, toolName);
+          // Keep the asynchronously committed pixels independent of the
+          // caller's ImageData after its native snapshot has been planned.
+          imageData = candidate || context.getImageData(0, 0, width, height);
+        }
+      }
+      if (!priorDraw) history.save(history.STATE_DRAW, null);
+      if (compactUndo) {
+        const undoState = history.getCurrentState();
+        setNativeCompactSnapshot(undoState.data.image, canvas, compactUndo);
+      }
+      layer.ctx.putImageData(imageData, 0, 0);
+      engine.layer_actions.savePreviewLayer(user.getIdUser(), layer.index);
+      engine.updateArtCanvas(true);
+      // This is the native end-of-draw operation. It updates undo and the
+      // normal local draft pipeline, and persists the room layer on its editor.
+      recordNativeEditorDraw(user, history, compact);
+      if (room) nativeEditorPublishHistory(engine, user, history);
+      // Native Save can open its preview before the next animation frame.
+      engine.art_canvas.renderLayers();
+    },
+    setSelection(mask, maskWidth = width, maskHeight = height) {
+      const room = ensureEdit();
+      if (maskWidth !== width || maskHeight !== height) throw editorFailure('layerChanged');
+      const lasso = user.tools_draw?.getToolByName?.('lasso')?.tool;
+      if (!lasso || typeof lasso.drawLines !== 'function') return false;
+      const outline = mask ? nativeEditorSelectionOutline(mask, width, height) : null;
+      let points = outline?.points;
+      let compact;
+      if (room && points) {
+        compact = existingNativeCompactSnapshot(history, layer);
+        try {
+          checkNativeRoomSnapshot(engine, room, user, layer, compact?.dataUrl || canvas.toDataURL('image/png'), points, 'lasso');
+        } catch (error) {
+          if (error.editorCode !== 'roomLimit') throw error;
+          points = null;
+        }
+      }
+      if (user.events_draw.getSelectionPoints()) engine.hotkeyClearSelection();
+      if (points?.length) {
+        installNativeOutlineRenderer(lasso);
+        nativeEditorContours.set(points, outline.contours);
+        user.events_draw.setSelectionPoints('lasso', points);
+        lasso.drawLines(points);
+      }
+      engine.updateArtCanvas(true);
+      if (room && points) {
+        // Match a normal native lasso completion so remote brush replay
+        // receives the same clip before any new stroke.
+        recordNativeEditorDraw(user, history, compact);
+        nativeEditorPublishHistory(engine, user, history);
+      }
+      return mask === null || Boolean(points);
+    },
+    selectionKey() {
+      const { layer: currentLayer } = activeNativeLayer(engine);
+      return currentLayer === layer ? user.events_draw.getSelectionPoints?.() || null : null;
+    },
+    readSelection() {
+      const points = this.selectionKey();
+      if (!points || points.length < 3) return null;
+      const buffer = document.createElement('canvas');
+      buffer.width = width;
+      buffer.height = height;
+      const ctx = buffer.getContext('2d');
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (const point of points.slice(1)) ctx.lineTo(point.x, point.y);
+      ctx.fill();
+      const rgba = ctx.getImageData(0, 0, width, height).data;
+      const result = new Uint8Array(width * height);
+      for (let i = 0; i < result.length; i++) result[i] = rgba[i * 4 + 3] >= 128 ? 1 : 0;
+      return result;
+    },
+  };
+}
+
+// Trace directed cell edges, with the selected pixel always on the right.
+// Hole outlines then have opposite winding. Double back over each bridge
+// so disconnected outlines can share the site's single nonzero-winding path.
+function nativeEditorSelectionOutline(mask, width, height) {
+  if (mask.length !== width * height) return null;
+  const stride = width + 1;
+  const edges = new Map();
+  const deltas = [1, stride, -1, -stride];
+  let edgeCount = 0;
+  const add = (vertex, direction) => {
+    edges.set(vertex, (edges.get(vertex) || 0) | (1 << direction));
+    return ++edgeCount <= 24000;
+  };
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = y * width + x;
+      if (!mask[i]) continue;
+      const tl = y * stride + x;
+      const tr = tl + 1;
+      const bl = tl + stride;
+      const br = bl + 1;
+      if ((y === 0 || !mask[i - width]) && !add(tl, 0) ||
+          (x === width - 1 || !mask[i + 1]) && !add(tr, 1) ||
+          (y === height - 1 || !mask[i + width]) && !add(br, 2) ||
+          (x === 0 || !mask[i - 1]) && !add(bl, 3)) return null;
+    }
+  }
+  if (!edges.size) return null;
+
+  const contours = [];
+  let pointCount = 0;
+  while (edges.size) {
+    const start = edges.keys().next().value;
+    let current = start;
+    let previousDirection = 0;
+    const contour = [];
+    do {
+      const outgoing = edges.get(current);
+      if (!outgoing) return null;
+      const direction = [1, 0, 3, 2].map(turn => (previousDirection + turn) % 4)
+        .find(next => outgoing & (1 << next));
+      if (direction !== previousDirection || !contour.length) {
+        contour.push({ x: current % stride, y: Math.floor(current / stride) });
+      }
+      const remaining = outgoing & ~(1 << direction);
+      if (remaining) edges.set(current, remaining);
+      else edges.delete(current);
+      previousDirection = direction;
+      current += deltas[direction];
+    } while (current !== start);
+    contour.push(contour[0]);
+    pointCount += contour.length + 1;
+    if (pointCount > 4096) return null;
+    contours.push(contour);
+  }
+  const points = contours[0].slice();
+  for (let i = 1; i < contours.length; i++) points.push(...contours[i], points[0]);
+  return { points, contours };
+}
+
+// Vertex coordinates belong to the drawing, including points outside its bounds.
+// Intersect scanlines through pixel centres with every edge before clipping spans.
+function polygonMask(width, height, vertices) {
+  const mask = new Uint8Array(width * height);
+  if (vertices.length < 3) return mask;
+  const edges = [];
+  for (let i = 0; i < vertices.length; i++) {
+    let a = vertices[i], b = vertices[(i + 1) % vertices.length];
+    if (a.y === b.y) continue;
+    if (a.y > b.y) [a, b] = [b, a];
+    edges.push({ x: a.x, y: a.y, end: b.y, slope: (b.x - a.x) / (b.y - a.y) });
+  }
+  for (let y = 0; y < height; y++) {
+    const sampleY = y + 0.5;
+    const crossings = [];
+    for (const edge of edges) {
+      if (sampleY >= edge.y && sampleY < edge.end) crossings.push(edge.x + (sampleY - edge.y) * edge.slope);
+    }
+    crossings.sort((a, b) => a - b);
+    for (let i = 1; i < crossings.length; i += 2) {
+      const left = Math.max(0, Math.ceil(crossings[i - 1] - 0.5));
+      const right = Math.min(width, Math.ceil(crossings[i] - 0.5));
+      if (right > left) mask.fill(1, y * width + left, y * width + right);
+    }
+  }
+  return mask;
+}
+
+function wandMask(image, point, tolerance, contiguous) {
+  const { width, height, data } = image;
+  const x = Math.floor(point.x), y = Math.floor(point.y);
+  const mask = new Uint8Array(width * height);
+  if (x < 0 || y < 0 || x >= width || y >= height) return mask;
+  const seed = y * width + x;
+  const alpha = data[seed * 4 + 3];
+  const reference = [0, 1, 2].map(k => data[seed * 4 + k] * alpha);
+  function matches(i) {
+    const offset = i * 4, a = data[offset + 3];
+    if (Math.abs(a - alpha) > tolerance) return false;
+    for (let k = 0; k < 3; k++) {
+      if (Math.abs(data[offset + k] * a - reference[k]) > 255 * tolerance) return false;
+    }
+    return true;
+  }
+  if (!contiguous) {
+    for (let i = 0; i < mask.length; i++) if (matches(i)) mask[i] = 1;
+    return mask;
+  }
+  const queue = new Int32Array(mask.length);
+  let count = 1;
+  queue[0] = seed;
+  mask[seed] = 1;
+  function visit(i) {
+    if (!mask[i] && matches(i)) {
+      mask[i] = 1;
+      queue[count++] = i;
+    }
+  }
+  for (let head = 0; head < count; head++) {
+    const i = queue[head], column = i % width;
+    if (column > 0) visit(i - 1);
+    if (column + 1 < width) visit(i + 1);
+    if (i >= width) visit(i - width);
+    if (i + width < mask.length) visit(i + width);
+  }
+  return mask;
+}
+
+function combineMasks(previous, next, operation) {
+  if (!previous || operation === 'replace') return next;
+  for (let i = 0; i < next.length; i++) {
+    if (operation === 'add') next[i] |= previous[i];
+    else if (operation === 'subtract') next[i] = previous[i] & (1 - next[i]);
+    else next[i] &= previous[i];
+  }
+  return next;
+}
+
+function drawingCanvas(width, height) {
+  const c = document.createElement('canvas');
+  c.width = width;
+  c.height = height;
+  return c;
+}
+
+function maskTexture(mask, width, height, outline) {
+  const canvas = drawingCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+  const image = ctx.createImageData(width, height);
+  const rgba = image.data;
+  for (let i = 0; i < mask.length; i++) {
+    if (!mask[i]) continue;
+    const x = i % width, y = Math.floor(i / width);
+    if (outline && x && x + 1 < width && y && y + 1 < height &&
+        mask[i-1] && mask[i+1] && mask[i-width] && mask[i+width]) continue;
+    const light = ((x + y) & 4) !== 0;
+    rgba[i*4] = light ? 255 : 15;
+    rgba[i*4+1] = light ? 255 : 78;
+    rgba[i*4+2] = light ? 255 : 73;
+    rgba[i*4+3] = 255;
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}
+
+function gradientPaint(ctx, type, a, b, stops) {
+  const gradient = type === 'radial'
+    ? ctx.createRadialGradient(a.x, a.y, 0, a.x, a.y, Math.max(0.001, Math.hypot(b.x-a.x, b.y-a.y)))
+    : ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+  for (const stop of stops) gradient.addColorStop(stop.at / 100, stop.color);
+  return gradient;
+}
+
+function maskedPaint(source, mask, paint, erase) {
+  const canvas = drawingCanvas(source.width, source.height);
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!erase) {
+    ctx.fillStyle = paint(ctx);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  // Retain every unselected byte, including hidden colour in transparent pixels.
+  const original = new Uint32Array(source.data.buffer, source.data.byteOffset, source.data.length / 4);
+  const result = new Uint32Array(pixels.data.buffer);
+  if (mask) for (let i = 0; i < mask.length; i++) if (!mask[i]) result[i] = original[i];
+  return pixels;
+}
+
+const TOOLS_TEMPLATE = `
+<style>
+:host{font:14px/1.35 system-ui,sans-serif;color:#18352c}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;pointer-events:none}
+.dock{position:absolute;top:6px;right:6px;max-width:calc(100% - 12px);pointer-events:none}
+.bar,.panel,[role=status]{pointer-events:auto;background:#fcfff9;box-shadow:0 2px 10px #172c2740;border:1px solid #a1b7a7;border-radius:8px}
+.bar,.row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.bar{width:fit-content;margin-left:auto;padding:3px}
+button,select,input{font:inherit}
+button,select{min-height:34px;border-radius:5px;border:1px solid #abbbb0;background:white;color:#24372e;padding:4px 8px;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #126253;outline-offset:2px}
+button[aria-pressed=true],[data-menu][aria-expanded=true]{background:#215d4c;border-color:#215d4c;color:white}
+[data-menu]{font-weight:650;background:#edf5e9}
+[data-active]:empty{display:none}
+.panel{width:min(315px,100%);max-height:calc(100dvh - 176px);overflow:auto;overscroll-behavior:contain;margin:4px 0 0 auto;padding:10px}
+.dock{width:min(380px,calc(100% - 12px))}
+.block{margin-top:8px;padding-top:8px;border-top:1px solid #d4dfd5}
+.pair{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pair+label,.pair+.pair,.row+.pair,.pair+.row{margin-top:6px}
+.pair input[type=range]{flex:1;min-width:55px;max-width:125px}
+.pair input[type=color],.row input[type=color]{width:40px;height:33px;padding:2px;cursor:pointer}
+.pair select{min-width:0;max-width:65%}
+p{margin:5px 0}
+[data-rail]{height:23px;position:relative;border:1px solid #a4afa6;margin:10px 10px 14px;cursor:crosshair}
+[data-rail] button{position:absolute;top:10px;transform:translateX(-50%);width:17px;min-height:19px;padding:0;border:2px solid white;border-radius:7px;box-shadow:0 0 0 1px #345}
+[data-rail] button[aria-pressed=true]{outline:2px solid #18352c;outline-offset:2px}
+[role=status]{position:absolute;top:100%;right:0;margin-top:5px;padding:5px 9px;max-width:min(315px,100%);font-size:13px;pointer-events:none}
+@media(max-height:480px){.panel{max-height:calc(100dvh - 150px)}}
+</style>
+<canvas tabindex="-1" aria-hidden="true"></canvas>
+<div class="dock">
+ <div class="bar">
+  <button type="button" data-menu aria-controls="drawing-controls" data-ru="Инструменты рисования">Drawing tools</button>
+  <span data-active></span>
+  <button type="button" hidden data-back data-ru="Шаг назад">Undo point</button>
+  <button type="button" hidden data-finish data-ru="Готово">Finish</button>
+  <button type="button" hidden data-end data-ru="Выйти">Exit tool</button>
+ </div>
+ <div class="panel" id="drawing-controls" hidden>
+  <div class="row">
+   <button type="button" data-tool="polygon" data-ru="Многоугольник">Polygon</button>
+   <button type="button" data-tool="wand" data-ru="Волшебная палочка">Magic wand</button>
+   <button type="button" data-tool="gradient" data-ru="Градиент">Gradient</button>
+  </div>
+  <label class="pair" data-combine-label><span data-ru="Выделение">Selection</span>
+   <select data-combine>
+    <option value="replace" data-ru="Заменить">Replace</option>
+    <option value="add" data-ru="Добавить">Add</option>
+    <option value="subtract" data-ru="Вычесть">Subtract</option>
+    <option value="intersect" data-ru="Пересечь">Intersect</option>
+   </select>
+  </label>
+  <div class="block" data-wand-options hidden>
+   <p data-ru="Коснитесь цвета на активном слое. Допуск можно менять после выбора.">Tap a color on the active layer. You can adjust the tolerance after picking.</p>
+   <label class="pair"><span data-ru="Допуск">Tolerance</span><input data-tolerance type="range" min="0" max="255" value="24"><output data-tolerance-value>24</output></label>
+   <label><input data-contiguous type="checkbox" checked><span data-ru="Только смежные пиксели">Contiguous pixels only</span></label>
+   <div class="row"><button data-use data-ru="Выбрать на холсте">Pick on canvas</button></div>
+  </div>
+  <div class="block" data-gradient-options hidden>
+   <p data-ru="Проведите линию от начала градиента до его конца.">Drag from the start of the gradient to its end.</p>
+   <label class="pair"><span data-ru="Вид">Type</span><select data-kind><option value="linear" data-ru="Линейный">Linear</option><option value="radial" data-ru="Радиальный">Radial</option></select></label>
+   <label class="pair"><span data-ru="Пресет">Preset</span><select data-preset></select></label>
+   <div data-rail></div>
+   <label class="pair"><span data-ru="Цвет точки">Stop color</span><input data-stop-color type="color"></label>
+   <label class="pair"><span data-ru="Положение">Position</span><input data-position type="range" min="0" max="100"><output data-stop-value></output></label>
+   <div class="row"><button data-add-stop data-ru="Добавить точку">Add stop</button><button data-remove data-ru="Удалить точку">Remove stop</button></div>
+   <div class="block row"><button data-save-preset data-ru="Сохранить пресет">Save preset</button><button data-rename-preset data-ru="Переименовать">Rename</button><button data-delete-preset data-ru="Удалить">Delete</button></div>
+   <div class="block row"><button data-use data-ru="Рисовать на холсте">Draw on canvas</button></div>
+  </div>
+  <div class="row block"><label><span data-ru="Цвет заливки">Fill color</span> <input type="color" data-fill-color value="#42764f"></label>
+   <button type="button" disabled data-fill data-ru="Залить">Fill selection</button>
+   <button type="button" disabled data-erase data-ru="Стереть">Erase selection</button>
+   <button type="button" disabled data-clear data-ru="Снять выделение">Deselect</button>
+  </div>
+ </div>
+ <div role="status" hidden></div>
+</div>
+`;
+
+function gradientEditor(container, tr, notify) {
+  const storageKey = 'loneti-essentials:gradients:v1';
+  const builtin = [
+    { name: tr('Graphite', 'Графит'), type: 'linear', stops: [{ at: 0, color: '#20242c' }, { at: 100, color: '#ffffff' }] },
+    { name: tr('Sunset', 'Закат'), type: 'linear', stops: [{ at: 0, color: '#522886' }, { at: 48, color: '#ed6380' }, { at: 100, color: '#ffda84' }] },
+    { name: tr('Lagoon', 'Лагуна'), type: 'radial', stops: [{ at: 0, color: '#e3fbc2' }, { at: 40, color: '#68ccd3' }, { at: 100, color: '#284779' }] }
+  ];
+  const valid = item => item && typeof item.name === 'string' && item.name.trim() &&
+    ['linear','radial'].includes(item.type) && Array.isArray(item.stops) && item.stops.length >= 2 &&
+    item.stops.every(s => s && Number.isFinite(s.at) && s.at >= 0 && s.at <= 100 && /^#[0-9a-f]{6}$/i.test(s.color));
+  let saved = [];
+  try {
+    const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    if (Array.isArray(stored)) saved = stored.filter(valid);
+  } catch { /* Factory presets also work with storage disabled. */ }
+  let stops, type, active, chosen = 0;
+  function option(value, label) {
+    const node = document.createElement('option');
+    node.value = value;
+    node.textContent = label;
+    return node;
+  }
+  const menu = container.querySelector('[data-preset]');
+  const kind = container.querySelector('[data-kind]');
+  const rail = container.querySelector('[data-rail]');
+  const color = container.querySelector('[data-stop-color]');
+  const position = container.querySelector('[data-position]');
+  const remove = container.querySelector('[data-remove]');
+  const write = (items) => {
+    try { localStorage.setItem(storageKey, JSON.stringify(items)); saved = items; return true; }
+    catch { notify(tr('Could not save presets on this device.', 'Не удалось сохранить пресеты на устройстве.')); return false; }
+  };
+  function sort() { return stops.slice().sort((a,b) => a.at - b.at); }
+  function draw() {
+    rail.style.backgroundImage = 'linear-gradient(to right,' + sort().map(s => s.color + ' ' + s.at + '%').join(',') + ')';
+    rail.replaceChildren();
+    stops.forEach((stop, index) => {
+      const marker = document.createElement('button');
+      marker.type = 'button';
+      marker.title = stop.at + '% ' + stop.color;
+      marker.setAttribute('aria-label', tr('Color stop ', 'Цветовая точка ') + (index + 1) + ', ' + marker.title);
+      marker.setAttribute('aria-pressed', String(stop === active));
+      marker.style.left = stop.at + '%';
+      marker.style.backgroundColor = stop.color;
+      marker.addEventListener('click', event => { event.stopPropagation(); active = stop; draw(); color.focus(); });
+      rail.append(marker);
+    });
+    position.value = active.at;
+    color.value = active.color;
+    remove.disabled = stops.length <= 2;
+    container.querySelector('[data-stop-value]').textContent = active.at + '%';
+    kind.value = type;
+    container.querySelector('[data-delete-preset]').disabled = chosen < builtin.length;
+    container.querySelector('[data-rename-preset]').disabled = chosen < builtin.length;
+  }
+  function open(index) {
+    chosen = index;
+    const item = [...builtin, ...saved][index];
+    type = item.type;
+    stops = item.stops.map(s => ({...s}));
+    active = stops[0];
+    menu.replaceChildren(...[...builtin, ...saved].map((p,i) => option(i,p.name)));
+    menu.value = String(index);
+    draw();
+  }
+  function nameInput(initial) {
+    const result = window.prompt(tr('Preset name', 'Название пресета'), initial)?.trim();
+    return result || '';
+  }
+  function add(at) {
+    const ordered = sort();
+    const next = ordered.find(s => s.at > at) || ordered[ordered.length - 1];
+    const left = ordered.filter(s => s.at <= at).pop() || ordered[0];
+    const f = left.at === next.at ? 0 : Math.max(0,Math.min(1,(at-left.at)/(next.at-left.at)));
+    let hex = '#';
+    for (const p of [1,3,5]) {
+      const a = parseInt(left.color.slice(p,p+2),16), b = parseInt(next.color.slice(p,p+2),16);
+      hex += Math.round(a + (b-a)*f).toString(16).padStart(2,'0');
+    }
+    active = { at, color: hex };
+    stops.push(active);
+    draw();
+  }
+  rail.addEventListener('click', event => {
+    const box = rail.getBoundingClientRect();
+    add(Math.max(0,Math.min(100,Math.round((event.clientX-box.left)*100/box.width))));
+  });
+  menu.onchange = () => open(Number(menu.value));
+  kind.onchange = () => { type = kind.value; };
+  color.oninput = () => { active.color = color.value; draw(); };
+  position.oninput = () => { active.at = Number(position.value); draw(); };
+  container.querySelector('[data-add-stop]').onclick = () => {
+    const ordered = [{at:0}, ...sort(), {at:100}];
+    let best = 0, mid = 50;
+    for (let i = 1; i < ordered.length; i++) {
+      const gap = ordered[i].at - ordered[i-1].at;
+      if (gap > best) { best = gap; mid = Math.round((ordered[i].at + ordered[i-1].at)/2); }
+    }
+    add(mid);
+  };
+  remove.onclick = () => {
+    if (stops.length <= 2) return;
+    stops.splice(stops.indexOf(active),1);
+    active = stops[0];
+    draw();
+  };
+  container.querySelector('[data-save-preset]').onclick = () => {
+    const name = nameInput(chosen >= builtin.length ? saved[chosen-builtin.length].name : '');
+    if (!name) return;
+    if (builtin.some(p => p.name === name)) { notify(tr('Choose a new preset name.', 'Выберите другое название.')); return; }
+    let i = saved.findIndex(p => p.name === name);
+    if (i >= 0 && !window.confirm(tr('Replace this saved preset?', 'Заменить сохранённый пресет?'))) return;
+    if (i < 0) i = saved.length;
+    const items = saved.slice();
+    items[i] = {name, type, stops:sort()};
+    if (write(items)) open(builtin.length+i);
+  };
+  container.querySelector('[data-rename-preset]').onclick = () => {
+    const i = chosen-builtin.length;
+    if (!saved[i]) return;
+    const name = nameInput(saved[i].name);
+    if (!name || name === saved[i].name) return;
+    if ([...builtin, ...saved].some(p => p.name === name)) { notify(tr('That name is in use.', 'Такое название уже есть.')); return; }
+    const items = saved.slice();
+    items[i] = {...items[i], name};
+    if (write(items)) { menu.selectedOptions[0].textContent = name; }
+  };
+  container.querySelector('[data-delete-preset]').onclick = () => {
+    const i = chosen-builtin.length;
+    if (!saved[i] || !window.confirm(tr('Delete this saved preset?', 'Удалить сохранённый пресет?'))) return;
+    if (write(saved.filter((_,id) => id !== i))) open(0);
+  };
+  open(0);
+  return () => ({type, stops:sort()});
+}
+
+function installDrawingTools(surface) {
+  const ru = (document.documentElement.lang || (location.hostname.endsWith('.ru') ? 'ru' : 'en')).toLowerCase().startsWith('ru');
+  const tr = (en, russian) => ru ? russian : en;
+  const host = document.createElement('div');
+  host.dataset.lonetiEssentials = 'tools';
+  host.style.cssText = 'position:absolute;inset:0;z-index:12;pointer-events:none';
+  surface.append(host);
+  const root = host.attachShadow({mode:'open'});
+  const template = document.createElement('template');
+  template.innerHTML = TOOLS_TEMPLATE;
+  root.append(template.content.cloneNode(true));
+  for (const el of root.querySelectorAll('[data-ru]')) {
+    if (ru) el.textContent = el.dataset.ru;
+  }
+  root.host.lang = ru ? 'ru' : 'en';
+  const q = s => root.querySelector(s);
+  const panel = q('.panel'), pad = q('canvas'), toast = q('[role=status]'), toggle = q('[data-menu]');
+  const finishBtn = q('[data-finish]'), undoPt = q('[data-back]'), end = q('[data-end]');
+  const labels = { polygon:tr('Polygon','Многоугольник'), wand:tr('Magic wand','Волшебная палочка'), gradient:tr('Gradient','Градиент') };
+  let tool = '', busy = false, editor = null, mask = null, nativeKey = null, handedOff = true;
+  let points = [], hover = null, drag = null, pointer = null, gradientLayer = null, edge = null, stencil = null;
+  let wandBase, frame = 0, toastTimer;
+  function notify(text) {
+    clearTimeout(toastTimer);
+    toast.textContent = text;
+    toast.hidden = !text;
+    if (text) toastTimer = setTimeout(() => { toast.hidden = true; }, 6500);
+  }
+  const gradient = gradientEditor(q('[data-gradient-options]'), tr, notify);
+  function failure(error) {
+    const messages = {
+      layerUnavailable: tr('Select one of your visible, unlocked layers.', 'Выберите свой видимый незаблокированный слой.'),
+      layerChanged: tr('The active layer changed. Make the selection again.', 'Активный слой изменился. Выделите область заново.'),
+      editorBusy: tr('Finish the current edit first.', 'Сначала завершите текущее действие.'),
+      roomUnavailable: tr('Drawing is unavailable on this room layer.', 'На этом слое комнаты рисование недоступно.'),
+      roomLimit: tr('This edit is too large to sync to the room.', 'Это изменение слишком велико для отправки в комнату.'),
+      startup: typeof saveAndroidSmilePack === 'function'
+        ? tr('Reopen the drawing. If the tools stay unavailable, update Android System WebView.', 'Откройте рисунок заново. Если инструменты недоступны, обновите Android System WebView.')
+        : tr('In Tampermonkey settings choose Content Script API → UserScripts API Dynamic, then reload the drawing.', 'В настройках Tampermonkey выберите Content Script API → UserScripts API Dynamic и обновите рисунок.')
+    };
+    notify(messages[error?.editorCode] || tr('The editor is unavailable. Reload the drawing and try again.', 'Редактор недоступен. Обновите страницу рисунка и попробуйте ещё раз.'));
+  }
+  function requireEditor() {
+    const current = getNativeEditor();
+    if (!current || current.surface !== surface) throw Object.assign(new Error(), {
+      editorCode: nativeEditorEngine ? 'layerUnavailable' : 'startup'
+    });
+    if (!editor || current.layerKey !== editor.layerKey || current.width !== editor.width || current.height !== editor.height) {
+      const changed = !!editor;
+      editor = current;
+      resetGesture();
+      adoptMask(current.readSelection(), true);
+      if (changed) throw Object.assign(new Error(), {editorCode:'layerChanged'});
+    } else {
+      editor = current;
+      if (editor.selectionKey() !== nativeKey) {
+        wandBase = null;
+        adoptMask(editor.readSelection(), true);
+      }
+    }
+    return current;
+  }
+  function adoptMask(next, wasHandedOff) {
+    mask = next;
+    nativeKey = editor.selectionKey();
+    handedOff = wasHandedOff;
+    edge = mask && maskTexture(mask, editor.width, editor.height, true);
+    stencil = null;
+    q('[data-erase]').disabled = q('[data-fill]').disabled = q('[data-clear]').disabled = !mask;
+  }
+  function selectMask(next) {
+    const ok = editor.setSelection(next);
+    adoptMask(next, ok);
+    if (!ok) notify(tr('This selection applies to Gradient, Fill and Erase in Drawing tools.', 'Это выделение действует для градиента, заливки и стирания в наших инструментах.'));
+    requestDraw();
+  }
+  function resetGesture() { points = []; hover = null; drag = null; pointer = null; wandBase = null; }
+  function controls() {
+    toggle.setAttribute('aria-expanded', String(!panel.hidden));
+    q('[data-active]').textContent = labels[tool] || '';
+    finishBtn.hidden = undoPt.hidden = tool !== 'polygon';
+    finishBtn.disabled = points.length < 3;
+    undoPt.disabled = !points.length;
+    end.hidden = !tool;
+    pad.style.pointerEvents = tool ? 'auto' : 'none';
+    pad.style.cursor = tool ? 'crosshair' : '';
+    for (const b of root.querySelectorAll('[data-tool]')) b.setAttribute('aria-pressed', String(b.dataset.tool === tool));
+    q('[data-wand-options]').hidden = tool !== 'wand';
+    q('[data-gradient-options]').hidden = tool !== 'gradient';
+    q('[data-combine-label]').hidden = tool === 'gradient';
+  }
+  function chooseTool(next) {
+    if (busy) return;
+    if (!next) {
+      tool = '';
+      resetGesture();
+      panel.hidden = true;
+      notify('');
+      controls(); requestDraw();
+      return;
+    }
+    try {
+      requireEditor();
+      resetGesture();
+      tool = next;
+      panel.hidden = next === 'polygon';
+      controls();
+      if (next === 'polygon') notify(tr('Tap vertices, then tap Finish or the first point.', 'Касайтесь вершин, затем нажмите «Готово» или первую точку.'));
+      if (next === 'gradient' || next === 'wand') notify('');
+      requestDraw();
+    } catch (e) { failure(e); }
+  }
+  function point(event) { return editor.clientToCanvas(event.clientX, event.clientY); }
+  function inImage(p) { return p.x >= 0 && p.y >= 0 && p.x < editor.width && p.y < editor.height; }
+  function polygonDone() {
+    if (points.length < 3 || busy) return;
+    try {
+      requireEditor();
+      const result = polygonMask(editor.width, editor.height, points);
+      selectMask(combineMasks(mask, result, q('[data-combine]').value));
+      tool = ''; resetGesture(); controls(); requestDraw();
+      if (handedOff) notify(tr('Selection ready.', 'Выделение готово.'));
+    } catch (e) { failure(e); }
+  }
+  function wandAt(p, previous) {
+    const next = wandMask(editor.readLayer(), p, Number(q('[data-tolerance]').value), q('[data-contiguous]').checked);
+    selectMask(combineMasks(previous, next, q('[data-combine]').value));
+    wandBase = { point:p, previous };
+  }
+  function adjustWand() {
+    q('[data-tolerance-value]').textContent = q('[data-tolerance]').value;
+    if (!wandBase || busy) return;
+    try { requireEditor(); if (wandBase) wandAt(wandBase.point, wandBase.previous); } catch (e) { failure(e); }
+  }
+  async function paint(action, line) {
+    if (busy) return;
+    busy = true;
+    try {
+      const edit = requireEditor();
+      if (!mask && action !== 'gradient') return;
+      const source = edit.readLayer();
+      const preset = gradient();
+      const pixels = maskedPaint(source, mask, ctx => action === 'fill' ? q('[data-fill-color]').value :
+        gradientPaint(ctx, preset.type, line.start, line.end, preset.stops), action === 'erase');
+      await edit.commitLayer(pixels);
+      panel.hidden = true;
+      if (action === 'gradient') notify(tr('Gradient applied.', 'Градиент применён.'));
+    } catch (e) { failure(e); }
+    finally { busy = false; controls(); requestDraw(); }
+  }
+  function down(event) {
+    if (!tool || busy || pointer !== null || event.button !== 0) return;
+    event.preventDefault(); event.stopPropagation();
+    try {
+      requireEditor();
+      pad.focus({preventScroll:true});
+      pointer = event.pointerId; pad.setPointerCapture(pointer);
+      const p = point(event);
+      panel.hidden = true; controls();
+      if (tool === 'gradient') drag = { start:p, end:p };
+      hover = p;
+      requestDraw();
+    } catch (e) { pointer = null; failure(e); }
+  }
+  function move(event) {
+    if (!tool || (pointer !== null && event.pointerId !== pointer)) return;
+    if (pointer === null && tool !== 'polygon') return;
+    if (!editor) return;
+    hover = point(event);
+    if (drag) drag.end = hover;
+    requestDraw();
+  }
+  function up(event) {
+    if (pointer !== event.pointerId) return;
+    event.preventDefault(); event.stopPropagation(); pointer = null;
+    try {
+      requireEditor();
+      const p = point(event);
+      if (tool === 'polygon') {
+        // Keep the actual coordinate, even when it lies on the surrounding pasteboard.
+        const first = points.length && editor.canvasToClient(points[0].x, points[0].y);
+        if (points.length >= 3 && Math.hypot(first.x-event.clientX,first.y-event.clientY) <= 9) polygonDone();
+        else if (!points.length || Math.hypot(p.x-points[points.length-1].x,p.y-points[points.length-1].y) > 0.001) points.push(p);
+      } else if (tool === 'wand' && inImage(p)) wandAt(p, mask);
+      else if (tool === 'gradient' && drag) {
+        const line = {start:drag.start,end:p};
+        drag = null;
+        if (Math.hypot(p.x-line.start.x,p.y-line.start.y) >= 0.1) void paint('gradient',line);
+      }
+      controls(); requestDraw();
+    } catch (e) { drag = null; failure(e); requestDraw(); }
+  }
+  function requestDraw() { if (!frame) frame = requestAnimationFrame(render); }
+  function render() {
+    frame = 0;
+    if (!host.isConnected) return;
+    const box = pad.getBoundingClientRect();
+    const w = Math.round(box.width), h = Math.round(box.height);
+    if (!w || !h) return;
+    if (pad.width !== w || pad.height !== h) { pad.width = w; pad.height = h; }
+    const ctx = pad.getContext('2d');
+    ctx.clearRect(0,0,w,h);
+    if (!editor || (!tool && handedOff)) return;
+    const screen = p => {
+      const c = editor.canvasToClient(p.x,p.y);
+      return {x:c.x-box.left,y:c.y-box.top};
+    };
+    const origin = screen({x:0,y:0}), right = screen({x:editor.width,y:0}), bottom = screen({x:0,y:editor.height});
+    ctx.save();
+    ctx.setTransform((right.x-origin.x)/editor.width,(right.y-origin.y)/editor.width,
+      (bottom.x-origin.x)/editor.height,(bottom.y-origin.y)/editor.height,origin.x,origin.y);
+    ctx.imageSmoothingEnabled = false;
+    if (drag && Math.hypot(drag.end.x-drag.start.x,drag.end.y-drag.start.y) >= 0.1) {
+      const preset = gradient();
+      if (!gradientLayer || gradientLayer.width !== editor.width || gradientLayer.height !== editor.height) gradientLayer = drawingCanvas(editor.width,editor.height);
+      const gc = gradientLayer.getContext('2d');
+      gc.globalCompositeOperation = 'source-over';
+      gc.fillStyle = gradientPaint(gc,preset.type,drag.start,drag.end,preset.stops);
+      gc.fillRect(0,0,editor.width,editor.height);
+      if (mask) {
+        stencil ||= maskTexture(mask, editor.width, editor.height, false);
+        gc.globalCompositeOperation = 'destination-in'; gc.drawImage(stencil,0,0);
+      }
+      ctx.drawImage(gradientLayer,0,0);
+    }
+    if (edge) ctx.drawImage(edge,0,0);
+    ctx.restore();
+    const line = drag ? [drag.start,drag.end] : [...points, ...(points.length && hover ? [hover] : [])];
+    if (!line.length) return;
+    const coords = line.map(screen);
+    ctx.beginPath();
+    coords.forEach(({x,y}, i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = '#214e52'; ctx.lineWidth = 1.5; ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+    for (const {x,y} of coords) {
+      ctx.beginPath(); ctx.arc(x,y,3.5,0,2*Math.PI); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+    }
+  }
+  pad.onpointerdown = down; pad.onpointermove = move; pad.onpointerup = up;
+  pad.onpointercancel = () => { pointer = null; drag = null; hover = null; requestDraw(); };
+  pad.ondblclick = event => { event.preventDefault(); if (tool === 'polygon') polygonDone(); };
+  for (const name of ['pointerdown','pointerup','mousedown','mousemove','mouseup','touchstart','touchmove','touchend','click','dblclick','contextmenu']) {
+    host.addEventListener(name, e => e.stopPropagation());
+  }
+  toggle.onclick = () => {
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) try { requireEditor(); } catch (e) { failure(e); }
+    controls();
+  };
+  for (const use of root.querySelectorAll('[data-use]')) use.onclick = () => {
+    panel.hidden = true;
+    pad.focus({preventScroll:true});
+    controls();
+  };
+  for (const b of root.querySelectorAll('[data-tool]')) b.onclick = () => chooseTool(b.dataset.tool);
+  finishBtn.onclick = polygonDone;
+  undoPt.onclick = () => { points.pop(); controls(); requestDraw(); };
+  end.onclick = () => chooseTool('');
+  q('[data-tolerance]').oninput = () => { q('[data-tolerance-value]').textContent = q('[data-tolerance]').value; };
+  q('[data-tolerance]').onchange = q('[data-contiguous]').onchange = q('[data-combine]').onchange = adjustWand;
+  q('[data-erase]').onclick = () => void paint('erase');
+  q('[data-fill]').onclick = () => void paint('fill');
+  q('[data-clear]').onclick = () => {
+    try { requireEditor(); selectMask(null); wandBase = null; notify(''); } catch(e) { failure(e); }
+  };
+  const lifecycle = new AbortController();
+  document.addEventListener('keydown', event => {
+    if (!host.isConnected || !tool || busy || event.composedPath().some(el =>
+      el.isContentEditable || el.matches?.('input,select,textarea,dialog,a[href]') ||
+      (event.key === 'Enter' && el.tagName === 'BUTTON'))) return;
+    if (event.key === 'Escape') chooseTool('');
+    else if (event.key === 'Enter' && tool === 'polygon') polygonDone();
+    else if (event.key === 'Backspace' && tool === 'polygon') { points.pop(); controls(); requestDraw(); }
+    else return;
+    event.preventDefault(); event.stopImmediatePropagation();
+  }, {capture:true, signal:lifecycle.signal});
+  document.addEventListener('click', event => {
+    if (event.target.closest?.('.one_tool[data-tool]') && tool) chooseTool('');
+  }, {capture:true, signal:lifecycle.signal});
+  surface.addEventListener('wheel', requestDraw, {passive:true,signal:lifecycle.signal});
+  const resize = new ResizeObserver(requestDraw);
+  resize.observe(surface);
+  controls();
+  return () => { lifecycle.abort(); resize.disconnect(); cancelAnimationFrame(frame); clearTimeout(toastTimer); host.remove(); };
+}
+
+function startDrawingTools() {
+  if (!nativeEditorRoute || !document.body) return;
+  const active = new Map();
+  function reconcile() {
+    for (const [surface, dispose] of active) {
+      if (!surface.isConnected || !surface.querySelector('[data-loneti-essentials="tools"]')) {
+        dispose();
+        active.delete(surface);
+      }
+    }
+    for (const surface of document.querySelectorAll('.js--container-work-canvas')) {
+      if (!active.has(surface)) active.set(surface, installDrawingTools(surface));
+    }
+  }
+  reconcile();
+  const observer = new MutationObserver(changes => {
+    for (const change of changes) {
+      for (const node of [...change.addedNodes, ...change.removedNodes]) {
+        if (node.nodeType === 1 && (node.matches('.js--container-work-canvas,[data-loneti-essentials="tools"]') ||
+            node.querySelector('.js--container-work-canvas,[data-loneti-essentials="tools"]'))) {
+          reconcile();
+          return;
+        }
+      }
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startDrawingTools, {once:true});
+else startDrawingTools();
+})();
+// END bundled drawing tools
+
+(function startSmileLibrary() {
   'use strict';
+  if (location.pathname === '/draw' || location.pathname.startsWith('/draw/')) return;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startSmileLibrary, { once: true });
+    return;
+  }
 
   const russian = {
     "Add this Smile to My emotes": "Добавить этот смайл в «Мои смайлы»",
@@ -41,7 +1252,6 @@
     "Missing Smile image": "Изображение смайла отсутствует",
     "Unsupported image URL": "Ссылка на изображение имеет неподдерживаемый формат",
     "Already added": "Смайл уже добавлен",
-    "You added this Smile from this page.": "Вы уже добавили этот смайл с этой страницы.",
     "Original unavailable": "Оригинал недоступен",
     "The original is needed to check the creator’s sharing preference.": "Нужен оригинал, чтобы проверить, разрешил ли автор копирование.",
     "The original is needed to check the creator’s sharing preference. Select the Smile again to retry.": "Нужен оригинал, чтобы проверить, разрешил ли автор копирование. Выберите смайл ещё раз, чтобы повторить попытку.",
@@ -62,7 +1272,6 @@
     "Could not read My emotes. Check the connection and try again.": "Не удалось загрузить «Мои смайлы». Проверьте подключение и повторите попытку.",
     "The signed-in account changed or the session expired. Reload My emotes.": "Аккаунт сменился или сеанс завершился. Перезагрузите страницу «Мои смайлы».",
     "LONETI returned an unfamiliar Smile card. Reload My emotes.": "LONETI вернул карточку смайла в неизвестном формате. Перезагрузите страницу «Мои смайлы».",
-    "A recently added Smile could not be read to verify the previous save. Try again when its image loads.": "Не удалось загрузить недавно добавленный смайл и проверить предыдущее сохранение. Повторите попытку, когда загрузится изображение.",
     "A previous save of this Smile was interrupted. Its new copy could not be verified in My emotes. Send this Smile again?": "Предыдущее сохранение этого смайла прервалось. Не удалось проверить наличие новой копии в «Моих смайлах». Отправить смайл снова?",
     "Stopped before retrying the interrupted save.": "Повторное сохранение отменено.",
     "LONETI accepted the save, but the new image could not be verified. Check My emotes before retrying.": "LONETI принял запрос на сохранение, но проверить новое изображение не удалось. Проверьте раздел «Мои смайлы» перед повторной попыткой.",
@@ -99,9 +1308,7 @@
     "Choose a .lesp file": "Выберите файл .lesp",
     "Pack password": "Пароль набора",
     "Preview pack": "Предпросмотр набора",
-    "Smiles in the pack: {count}. Matching copies in this pack or {unsorted} will be reused.": "Смайлов в наборе: {count}. Совпадающие копии из этого набора или раздела «{unsorted}» будут использованы повторно.",
     "Install pack": "Установить набор",
-    "Installed {name} in My emotes.": "Набор «{name}» установлен в разделе «Мои смайлы».",
     "Could not read this pack.": "Не удалось прочитать этот набор.",
     "A Smile must be 300 × 300 pixels.": "Размер смайла должен быть 300 × 300 пикселей.",
     "Could not read the Smile canvas.": "Не удалось прочитать холст смайла.",
@@ -143,7 +1350,14 @@
     "Rename": "Переименовать",
     "Download pack": "Скачать набор",
     "This Smile is protected from collection": "Этот смайл защищён от копирования",
-    "Could not process this Smile.": "Не удалось обработать этот смайл."
+    "Could not process this Smile.": "Не удалось обработать этот смайл.",
+    "This Smile is already in {pack}.": "Этот смайл уже есть в разделе «{pack}».",
+    "A Smile in My emotes could not be read to check for duplicates. Try again when its image loads.": "Не удалось загрузить смайл из раздела «Мои смайлы» для поиска дубликатов. Повторите попытку, когда загрузится изображение.",
+    "This pack already has {limit} Smiles. Move one out or choose another pack.": "В этом наборе уже {limit} смайлов. Переместите один смайл или выберите другой набор.",
+    "Smiles in the file: {count}. Existing Smiles are reused. Named packs hold up to {limit} Smiles each.": "Смайлов в файле: {count}. Уже сохранённые смайлы используются повторно. В каждом именованном наборе помещается до {limit} смайлов.",
+    "Added: {added}. Already in My emotes: {existing}.": "Добавлено: {added}. Уже в разделе «Мои смайлы»: {existing}.",
+    "Existing Smiles stayed in their packs: {names}.": "Уже сохранённые смайлы остались в своих наборах: {names}.",
+    "The matching edition remains in {pack}.": "Совпадающая версия осталась в наборе «{pack}»."
   };
 
   function supportedLocale(language) {
@@ -175,7 +1389,6 @@
     '#list_msg .one_msg .smile_msg > img',
   ].join(', ');
   const editorSize = 300;
-  const added = new Set();
   let currentDialog = null;
   const onSettings = location.pathname === '/settings';
   const query = new URLSearchParams(location.search);
@@ -319,7 +1532,6 @@
     const loader = new AbortController();
     let saving = false;
     let imageData;
-    let key;
 
     function finish(title, message, showLibrary = false) {
       ui.title.textContent = title;
@@ -355,11 +1567,6 @@
       const displayed = new URL(src, document.baseURI);
       if (!['https:', 'http:'].includes(displayed.protocol)) throw new LocalizedError(t('Unsupported image URL'));
       const original = originalFor(displayed);
-      key = original.href;
-      if (added.has(key)) {
-        finish(t('Already added'), t('You added this Smile from this page.'), true);
-        return;
-      }
       ui.canvas.width = ui.canvas.height = editorSize;
       const fullSize = await drawSource(original, ui.canvas, loader.signal);
       loader.signal.throwIfAborted();
@@ -387,9 +1594,12 @@
       ui.close.disabled = ui.add.disabled = true;
       ui.status.textContent = t('Adding to My emotes…');
       try {
-        await saveSmileImage(imageData);
-        added.add(key);
-        finish(t('Added to My emotes'), t('Your Smile is ready to use.'), true);
+        const result = await saveToSmileLibrary(imageData);
+        if (result.created) {
+          finish(t('Added to My emotes'), t('Your Smile is ready to use.'), true);
+        } else {
+          finish(t('Already added'), t('This Smile is already in {pack}.', { pack: smilePackName(result.entry.id) }), true);
+        }
       } catch (error) {
         finish(error instanceof SaveRejected ? t('Unable to save') : t('Save unconfirmed'),
           displayError(error, 'Check My emotes before trying again. The request may have reached LONETI.'), true);
@@ -479,10 +1689,25 @@
     return canvas;
   }
 
-  async function canvasDigest(canvas) {
-    const pixels = canvas.getContext('2d').getImageData(0, 0, editorSize, editorSize).data;
+  async function pixelDigest(pixels) {
     const hash = await crypto.subtle.digest('SHA-256', pixels);
     return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function canvasIdentity(canvas, includeLegacy = true) {
+    const protectedSmile = hasNoCopyMark(canvas);
+    const pixels = canvas.getContext('2d').getImageData(0, 0, editorSize, editorSize).data;
+    const original = includeLegacy ? pixelDigest(pixels.slice()) : null;
+    // Ignore the marker's carrier bits, but keep protected and shareable editions distinct.
+    for (let index = 0; index < lespNoCopySignature.length * 8; index += 1) {
+      pixels[((editorSize - 1) * editorSize + index) * 4 + 2] &= 254;
+    }
+    const digest = await pixelDigest(pixels);
+    return { digest: digest + (protectedSmile ? ':protected' : ':shareable'), legacy: await original };
+  }
+
+  async function canvasDigest(canvas) {
+    return (await canvasIdentity(canvas, false)).digest;
   }
 
   async function ownedDigest(entry) {
@@ -501,7 +1726,7 @@
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, editorSize, editorSize);
     ctx.drawImage(image, 0, 0);
-    return { dataUrl: canvas.toDataURL('image/png'), digest: await canvasDigest(canvas) };
+    return { dataUrl: canvas.toDataURL('image/png'), ...await canvasIdentity(canvas) };
   }
 
   async function fetchLibrary() {
@@ -536,39 +1761,110 @@
 
   async function findMatch(entries, digest, mustRuleOutMatch = false) {
     let unreadable = false;
-    for (const entry of entries) {
-      try {
-        if ((await ownedDigest(entry)) === digest) return entry;
-      } catch {
-        unreadable = true;
-      }
+    for (let index = 0; index < entries.length; index += 6) {
+      const batch = entries.slice(index, index + 6);
+      const results = await Promise.allSettled(batch.map(ownedDigest));
+      const match = results.findIndex(result => result.status === 'fulfilled' && result.value === digest);
+      if (match >= 0) return batch[match];
+      unreadable ||= results.some(result => result.status === 'rejected');
     }
-    if (unreadable && mustRuleOutMatch) throw new LocalizedError(t('A recently added Smile could not be read to verify the previous save. Try again when its image loads.'));
+    if (unreadable && mustRuleOutMatch) {
+      throw new LocalizedError(t('A Smile in My emotes could not be read to check for duplicates. Try again when its image loads.'));
+    }
     return null;
   }
 
-  async function recordMember(id, packId, digest) {
-    await changePackState(state => {
-      if (packId) state.members[id] = packId;
-      else delete state.members[id];
-      delete state.pending[digest];
+  const maxNamedPackSize = 16;
+
+  function smilePackName(id, state = readPackState()) {
+    return state.packs.find(pack => pack.id === state.members[id])?.name || t('Unsorted');
+  }
+
+  function packMemberCount(state, packId, snapshot) {
+    let count = 0;
+    for (const id of snapshot.keys()) {
+      if (state.members[id] === packId) count++;
+    }
+    return count;
+  }
+
+  function choosePackRoom(state, base, snapshot) {
+    const family = [base, ...state.packs.filter(pack => pack.continuationOf === base.id)];
+    const available = family.find(pack => packMemberCount(state, pack.id, snapshot) < maxNamedPackSize);
+    if (available) return available.id;
+    const names = new Set(state.packs.map(pack => pack.name.toLowerCase()));
+    let number = 2;
+    let name;
+    do {
+      const suffix = ' (' + number++ + ')';
+      name = base.name.slice(0, lespMaxNameLength - suffix.length).replace(/[\ud800-\udbff]$/, '').trimEnd() + suffix;
+    } while (names.has(name.toLowerCase()));
+    const continuation = { id: crypto.randomUUID(), name, continuationOf: base.id };
+    state.packs.push(continuation);
+    return continuation.id;
+  }
+
+  function splitOversizedPacks(state, snapshot) {
+    for (const pack of [...state.packs]) {
+      const ids = [...snapshot.keys()].filter(id => state.members[id] === pack.id).sort(newestSmileFirst);
+      const base = state.packs.find(item => item.id === pack.continuationOf) || pack;
+      for (const id of ids.slice(maxNamedPackSize)) {
+        state.members[id] = choosePackRoom(state, base, snapshot);
+      }
+    }
+  }
+
+  async function migrateOversizedPacks() {
+    const state = readPackState();
+    const counts = new Map();
+    for (const id of Object.values(state.members)) counts.set(id, (counts.get(id) || 0) + 1);
+    if (![...counts.values()].some(count => count > maxNamedPackSize)) return;
+    await withLibraryWrite(async () => {
+      const snapshot = await fetchLibrary();
+      await changePackState(state => splitOversizedPacks(state, snapshot));
     });
   }
 
-  // Native saves return success without a library ID. Match new IDs by pixels,
-  // so a simultaneous addition in another browser cannot land in this pack.
-  async function uploadEdition(dataUrl, digest, packId, snapshot) {
-    const pending = readPackState().pending[digest];
-    if (pending) {
-      const restored = await findMatch([...snapshot.values()].filter(entry => !pending.before.includes(entry.id)), digest, true);
-      if (restored) {
-        await recordMember(restored.id, pending.packId, digest);
-        if (pending.packId === packId) return { snapshot, entry: restored };
-      } else if (!window.confirm(t('A previous save of this Smile was interrupted. Its new copy could not be verified in My emotes. Send this Smile again?'))) {
-        throw new LocalizedError(t('Stopped before retrying the interrupted save.'));
-      }
+  async function recordMember(id, packId, identity, snapshot) {
+    await changePackState(state => {
+      if (packId && !state.members[id] && state.packs.some(pack => pack.id === packId) &&
+          packMemberCount(state, packId, snapshot) < maxNamedPackSize) state.members[id] = packId;
+      delete state.pending[identity.digest];
+      delete state.pending[identity.legacy];
+    });
+  }
+
+  async function inspectSmileEdition(snapshot, identity) {
+    const state = readPackState();
+    const { digest, legacy } = identity;
+    const pending = state.pending[digest] || state.pending[legacy];
+    const entries = [...snapshot.values()].sort((a, b) => Number(Boolean(state.members[b.id])) - Number(Boolean(state.members[a.id])));
+    const match = await findMatch(entries, digest, true);
+    if (!pending) return match;
+    if (match) {
+      await recordMember(match.id, pending.before.includes(match.id) ? '' : pending.packId, identity, snapshot);
+      return match;
     }
-    await changePackState(state => { state.pending[digest] = { before: [...snapshot.keys()], packId }; });
+    if (!window.confirm(t('A previous save of this Smile was interrupted. Its new copy could not be verified in My emotes. Send this Smile again?'))) {
+      throw new LocalizedError(t('Stopped before retrying the interrupted save.'));
+    }
+    return null;
+  }
+
+  // Native saves return success without a library ID. Match only new IDs by pixels.
+  async function uploadEdition(dataUrl, identity) {
+    const { digest, legacy } = identity;
+    // Refresh after local comparison or a retry prompt, in case another session added artwork.
+    const snapshot = await fetchLibrary();
+    const earlier = await findMatch([...snapshot.values()], digest, true);
+    if (earlier) {
+      const existing = await inspectSmileEdition(snapshot, identity);
+      return { snapshot, entry: existing || earlier, created: false };
+    }
+    await changePackState(state => {
+      delete state.pending[legacy];
+      state.pending[digest] = { before: [...snapshot.keys()], packId: '' };
+    });
     try {
       await saveSmileImage(dataUrl);
     } catch (error) {
@@ -579,8 +1875,18 @@
     showNewLibraryCards(after);
     const match = await findMatch([...after.values()].filter(entry => !snapshot.has(entry.id)), digest);
     if (!match) throw new LocalizedError(t('LONETI accepted the save, but the new image could not be verified. Check My emotes before retrying.'));
-    await recordMember(match.id, packId, digest);
-    return { snapshot: after, entry: match };
+    await recordMember(match.id, '', identity, after);
+    return { snapshot: after, entry: match, created: true };
+  }
+
+  async function saveToSmileLibrary(source) {
+    return withLibraryWrite(async () => {
+      const prepared = await preparePackImage(source);
+      const snapshot = await fetchLibrary();
+      const entry = await inspectSmileEdition(snapshot, prepared);
+      if (entry) return { snapshot, entry, created: false };
+      return uploadEdition(prepared.dataUrl, prepared);
+    });
   }
 
   async function removeReplacedSmile(previous, replacement) {
@@ -618,7 +1924,7 @@
     return after;
   }
 
-  async function changeOwnedProtection(entry, desired, packId) {
+  async function changeOwnedProtection(entry, desired) {
     const prompt = desired
       ? t('Replace this library entry with a protected Smile? The old entry will be removed after the replacement is verified. Earlier posts still reference the old image.')
       : t('Replace this library entry with a shareable Smile? The old entry will be removed after the replacement is verified. Earlier posts still reference the old image.');
@@ -629,15 +1935,13 @@
       const canvas = await readOwnedCanvas(entry.url, 'no-store');
       if (hasNoCopyMark(canvas) === desired) return false;
       setNoCopyMark(canvas, desired);
-      const digest = await canvasDigest(canvas);
-      const state = readPackState();
-      const siblings = [...snapshot.values()].filter(item => item.id !== entry.id && (state.members[item.id] || '') === packId);
-      let replacement = await findMatch(siblings, digest);
+      const identity = await canvasIdentity(canvas);
+      let replacement = await inspectSmileEdition(snapshot, identity);
       if (!replacement) {
-        replacement = (await uploadEdition(canvas.toDataURL('image/png'), digest, packId, snapshot)).entry;
+        replacement = (await uploadEdition(canvas.toDataURL('image/png'), identity)).entry;
       }
       const verified = await readOwnedCanvas(replacement.url, 'no-store');
-      if (hasNoCopyMark(verified) !== desired || await canvasDigest(verified) !== digest) {
+      if (hasNoCopyMark(verified) !== desired || await canvasDigest(verified) !== identity.digest) {
         throw new LocalizedError(t('The replacement image failed verification. The old library entry was kept.'));
       }
       const after = await removeReplacedSmile(entry, replacement);
@@ -645,48 +1949,65 @@
       for (const card of getLibraryCards()) {
         if (card.dataset.id === entry.id) card.remove();
       }
+      let otherPack;
       await changePackState(state => {
         const group = state.members[entry.id] || '';
-        if (group) state.members[replacement.id] = group;
-        else delete state.members[replacement.id];
+        const replacementGroup = state.members[replacement.id];
         delete state.members[entry.id];
-        delete state.pending[digest];
+        if (replacementGroup && replacementGroup !== group) {
+          otherPack = smilePackName(replacement.id, state);
+        } else if (group && !replacementGroup && packMemberCount(state, group, after) < maxNamedPackSize) {
+          state.members[replacement.id] = group;
+        }
       });
-      return true;
+      return { otherPack };
     });
   }
 
   async function installPack(pack, progress) {
-    await withLibraryWrite(async () => {
+    return withLibraryWrite(async () => {
       let snapshot = await fetchLibrary();
       showNewLibraryCards(snapshot);
-      let packId;
-      await changePackState(state => {
-        if (isUnsortedPackName(pack.name)) {
-          packId = '';
-          return;
-        }
-        const existing = state.packs.find(item => item.name.toLowerCase() === pack.name.toLowerCase());
-        packId = existing?.id || crypto.randomUUID();
-        if (!existing) state.packs.push({ id: packId, name: pack.name });
-      });
+      await changePackState(state => splitOversizedPacks(state, snapshot));
+      const unassigned = isUnsortedPackName(pack.name);
+      const retained = new Set();
+      let created = 0;
+      let reused = 0;
       for (const [index, source] of pack.smiles.entries()) {
         progress(t('Installing Smile {current} of {total}…', { current: index + 1, total: pack.smiles.length }));
         try {
-          const { dataUrl, digest } = await preparePackImage(source);
-          const state = readPackState();
-          const eligible = [...snapshot.values()].filter(entry => !state.members[entry.id] || state.members[entry.id] === packId);
-          // Prefer this pack's own copy when Unsorted contains identical artwork.
-          eligible.sort((a, b) => Number(state.members[b.id] === packId) - Number(state.members[a.id] === packId));
-          const match = await findMatch(eligible, digest);
-          if (match) await recordMember(match.id, packId, digest);
-          else snapshot = (await uploadEdition(dataUrl, digest, packId, snapshot)).snapshot;
+          const prepared = await preparePackImage(source);
+          let entry = await inspectSmileEdition(snapshot, prepared);
+          if (entry) {
+            reused++;
+          } else {
+            const result = await uploadEdition(prepared.dataUrl, prepared);
+            snapshot = result.snapshot;
+            entry = result.entry;
+            if (result.created) created++;
+            else reused++;
+          }
+          await changePackState(state => {
+            let base = state.packs.find(item => item.name.toLowerCase() === pack.name.toLowerCase());
+            const assigned = state.packs.find(item => item.id === state.members[entry.id]);
+            if (assigned) {
+              if (unassigned || !base || (assigned.id !== base.id && assigned.continuationOf !== base.id)) retained.add(assigned.name);
+              return;
+            }
+            if (unassigned) return;
+            if (!base) {
+              base = { id: crypto.randomUUID(), name: pack.name };
+              state.packs.push(base);
+            }
+            state.members[entry.id] = choosePackRoom(state, base, snapshot);
+          });
         } catch (error) {
           throw new LocalizedError(t('{current} of {total} processed. {reason} Reopen this file to resume.', {
             current: index, total: pack.smiles.length, reason: displayError(error, 'Could not process this Smile.'),
           }));
         }
       }
+      return { created, reused, retained: [...retained] };
     });
   }
   function transferDialog(title) {
@@ -850,15 +2171,17 @@
             samples.append(img);
           }
           ui.fields.replaceChildren(samples);
-          ui.status.textContent = t('Smiles in the pack: {count}. Matching copies in this pack or {unsorted} will be reused.', {
-            count: pack.smiles.length, unsorted: t('Unsorted'),
+          ui.status.textContent = t('Smiles in the file: {count}. Existing Smiles are reused. Named packs hold up to {limit} Smiles each.', {
+            count: pack.smiles.length, limit: maxNamedPackSize,
           });
           ui.add.textContent = t('Install pack');
           return;
         }
-        await installPack(pack, text => { ui.status.textContent = text; });
+        const { created, reused, retained } = await installPack(pack, text => { ui.status.textContent = text; });
         ui.setBusy(false);
-        ui.done(t('Installed {name} in My emotes.', { name: displayPackName(pack.name) }));
+        const summary = t('Added: {added}. Already in My emotes: {existing}.', { added: created, existing: reused });
+        const groups = retained.length ? ' ' + t('Existing Smiles stayed in their packs: {names}.', { names: retained.join(', ') }) : '';
+        ui.done(summary + groups);
       } catch (error) {
         if (pack) {
           ui.setBusy(false);
@@ -937,21 +2260,35 @@
     label.style.margin = '0.5em 0';
     label.append(checkbox, ' ' + t('Prevent copying this Smile'));
     save.before(label);
-    let stampedOutput;
-
-    save.addEventListener('click', (event) => {
+    save.addEventListener('click', async event => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
       if (save.classList.contains('disable_btn')) return;
-      if (!checkbox.checked && (!stampedOutput || download.getAttribute('href') !== stampedOutput)) return;
+      save.classList.add('disable_btn');
+      checkbox.disabled = true;
+      const caption = [...save.childNodes];
+      save.textContent = t('Adding to My emotes…');
       try {
         setNoCopyMark(canvas, checkbox.checked);
         const src = canvas.toDataURL('image/png');
         preview.src = src;
         download.setAttribute('href', src);
-        stampedOutput = checkbox.checked ? src : undefined;
+        const draft = localStorage.getItem('smile');
+        const result = await saveToSmileLibrary(src);
+        if (!result.created) {
+          window.alert(t('This Smile is already in {pack}.', { pack: smilePackName(result.entry.id) }));
+          return;
+        }
+        // The native editor clears its autosaved draft only after a successful save.
+        if (localStorage.getItem('smile') === draft) localStorage.removeItem('smile');
+        window.onbeforeunload = null;
+        location.assign(libraryPage);
       } catch (error) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        window.alert(displayError(error, 'Could not update Smile copy protection.'));
+        window.alert(displayError(error, 'Could not process this Smile.'));
+      } finally {
+        save.replaceChildren(...caption);
+        save.classList.remove('disable_btn');
+        checkbox.disabled = false;
       }
     }, true);
   }
@@ -1239,15 +2576,24 @@
   }
 
   function assignSmilePack(smileId, packId) {
-    return changePackState(state => {
-      if (!packId) {
-        delete state.members[smileId];
-        return;
-      }
-      if (!state.packs.some(pack => pack.id === packId)) {
-        throw new LocalizedError(t('That Smile pack is no longer available.'));
-      }
-      state.members[smileId] = packId;
+    return withLibraryWrite(async () => {
+      const snapshot = await fetchLibrary();
+      if (!snapshot.has(smileId)) throw new LocalizedError(t('This Smile changed. Reload My emotes.'));
+      await changePackState(state => {
+        splitOversizedPacks(state, snapshot);
+        if (!packId) {
+          delete state.members[smileId];
+          return;
+        }
+        if (state.members[smileId] === packId) return;
+        if (!state.packs.some(pack => pack.id === packId)) {
+          throw new LocalizedError(t('That Smile pack is no longer available.'));
+        }
+        if (packMemberCount(state, packId, snapshot) >= maxNamedPackSize) {
+          throw new LocalizedError(t('This pack already has {limit} Smiles. Move one out or choose another pack.', { limit: maxNamedPackSize }));
+        }
+        state.members[smileId] = packId;
+      });
     });
   }
 
@@ -1351,10 +2697,14 @@
         move.disabled = true;
         status.textContent = '';
         try {
-          if (await changeOwnedProtection(entry, desired, move.value)) {
-            status.textContent = desired
+          const result = await changeOwnedProtection(entry, desired);
+          if (result) {
+            const message = desired
               ? t('The old library entry was replaced with the protected edition.')
               : t('The old library entry was replaced with the shareable edition.');
+            status.textContent = result.otherPack
+              ? message + ' ' + t('The matching edition remains in {pack}.', { pack: result.otherPack })
+              : message;
           }
         } catch (error) {
           showError(error);
@@ -1624,6 +2974,7 @@
     window.addEventListener('storage', event => {
       if (event.key === storageKey || event.key === null) document.dispatchEvent(new Event('lsc-packs-changed'));
     });
+    migrateOversizedPacks().catch(() => {});
     if (onSettings) {
       if (query.get('new') === 'smile') setupEditorProtection();
       if (query.get('act') === 'smiles') setupPackLibrary();

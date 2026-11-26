@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Smile Collector</string>
+    <string name="app_name">Loneti essentials</string>
     <string name="more">Menu</string>
     <string name="home">LONETI home</string>
     <string name="library">My emotes</string>
@@ -9,5 +9,5 @@
     <string name="retry">Try again</string>
     <string name="no_picker">No file picker is available on this device.</string>
     <string name="no_browser">No browser could open this link.</string>
-    <string name="update_engine">Update Android System WebView or Chrome to use Smile Collector.</string>
+    <string name="update_engine">Update Android System WebView or Chrome to use Loneti essentials.</string>
 </resources>

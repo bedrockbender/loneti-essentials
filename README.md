@@ -1,22 +1,33 @@
-# LONETI Smile Collector
+# Loneti essentials
 
-Collect a Smile from a drawing comment or drawing-room chat, organize your library into packs, and share a whole pack with a friend. Each person uses their own signed-in LONETI account.
+Draw on LONETI with polygon and color selections and editable gradients. Collect Smiles from comments and rooms and share them with friends as packs. The Android app and Tampermonkey userscript include the same tools.
 
 ## Install on Android
 
-1. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-smile-collector/#android-setup) on a phone or tablet running Android 8.0 or newer. Tap **Download Android APK** and open the file.
+1. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-smile-collector/#android-setup) on a phone or tablet running Android 8.0 or newer. Tap **Download for Android** and open the file.
 2. If Android asks, allow the browser or Files app that opened the download to **Install unknown apps**. Return to the installer and tap **Install**.
-3. Open **Smile Collector** and sign in to LONETI. Tap a Smile in a comment or drawing room to preview it. Tap **Add to my Smiles** to keep it. The **⋮** menu opens **My emotes**.
+3. Open **Loneti essentials** and sign in to LONETI. Tap a Smile in a comment or drawing room to preview it. Tap **Add to my Smiles** to keep it. The **⋮** menu opens **My emotes**. Installing over the earlier Smile Collector APK preserves your app data.
 
 The app uses Android System WebView and has its own LONETI sign-in session. Keep WebView up to date. Use **Download pack** and **Install pack** in My emotes to move a named pack between the app and your browser. Android opens its Files picker to choose where to save or which file to install.
 
 ## Install with Tampermonkey
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser. In Chrome, type `chrome://extensions` into a new tab. Find the Tampermonkey card, click **Details**, and turn on **Allow User Scripts**. In Edge, start at `edge://extensions`. If the switch is missing, enable **Developer mode** on the browser’s extensions list. Firefox users can go straight to step 2. [Tampermonkey permissions guide](https://www.tampermonkey.net/faq.php?locale=en&q=Q209)
-2. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-smile-collector/), choose **Install LONETI Smile Collector**, and confirm in Tampermonkey.
+2. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-smile-collector/#browser), expand **Use the browser userscript**, choose **Install the userscript**, and confirm in Tampermonkey. If the drawing tools miss the editor at startup, choose **UserScripts API Dynamic** under **Content Script API** in the Tampermonkey dashboard settings, then reload the drawing. [Tampermonkey startup modes](https://www.tampermonkey.net/documentation.php?q=content_script_api)
 3. Reload your LONETI drawing or room. Hover over a Smile to see its outline, then click it. You can also use **Tab** to focus it and **Enter** to open the preview. Choose **Cancel** or press **Esc** to leave the preview without saving.
 
 The userscript follows LONETI’s page language automatically. The installation guide starts in your browser’s preferred supported language and remembers your choice of **EN** or **Русский**.
+
+## Draw
+
+Open **Drawing tools** in a standalone drawing, room, Smile, or avatar editor and select an unlocked layer you can edit.
+
+- **Polygon** adds a vertex wherever you tap in the workspace, including outside the canvas. Tap the first vertex, press **Enter**, or choose **Finish** to close the shape. **Undo point** removes the last vertex. The selection is clipped to the canvas when you finish.
+- **Magic wand** selects colors on the active layer. Adjust **Tolerance** before or after tapping a pixel. Clear **Contiguous pixels only** to include matching islands. Both selection tools can replace, add to, subtract from, or intersect the current selection.
+- **Gradient** applies a linear or radial blend in the direction you drag. Tap the gradient strip to add a color stop, then edit its color and position. Save, rename, or delete personal presets in the panel. Presets stay in the current app or browser on that LONETI domain.
+- **Fill selection** and **Erase selection** act on the selected pixels. **Deselect** clears the boundary. Native Undo can undo a gradient or fill. Very detailed selections can still be used with these tools when LONETI cannot represent their outlines for the native brush.
+
+In a drawing room the app uses the editor’s own history and sends the resulting layer as a PNG. If the standard PNG exceeds the connection’s message limit, it tries a smaller, lossless encoding before changing the drawing. Other participants can see the result with the ordinary LONETI client. If the room is disconnected, the layer is locked, or the image still exceeds the limit, the edit leaves the layer untouched.
 
 ## Organize and share packs
 
@@ -25,9 +36,9 @@ The userscript follows LONETI’s page language automatically. The installation 
 3. Choose **Download pack** to save a `.lesp` file. Enter and confirm a password to encrypt the artwork and the pack name inside the file. A blank password creates a file anyone can install. The download filename also contains the pack name.
 4. To install a friend's pack, choose **Install pack** beside **Draw emote**. Select the file, enter its password if prompted, then choose **Preview pack**. Review its name and pictures and choose **Install pack** to add them to My emotes.
 
-The images are saved in your LONETI account. Pack names and assignments are stored in this browser for the current profile and LONETI domain. Export a pack to take its grouping to another browser. Files support up to 100 Smiles and 16 MiB per pack.
+Named packs and new exports hold up to **16 Smiles**. The file size limit is 16 MiB. Unsorted can hold the rest of your library. Older version 1 files with up to 100 Smiles remain readable. Oversized named packs are divided into numbered groups. The images stay in your LONETI account, while pack membership is local to the current app or browser, profile, and LONETI domain.
 
-Installing into a named pack merges with a pack of the same name. Matching artwork already in that pack or in Unsorted is reused. Other named packs keep their copies. If LONETI stops an install, the dialog reports how far it got. Installing the same file again checks the library before continuing. An interrupted request whose result is still uncertain requires confirmation before another upload.
+Collecting, saving a Smile from its editor, and installing a pack check the account’s full-size artwork before uploading. Existing artwork in Unsorted can join the destination pack. A matching Smile already in another named pack stays there, and the dialog identifies its pack. Retrying an interrupted installation rechecks the library. Distinct sharing preferences are preserved. Independent devices saving at precisely the same time can still race at LONETI.
 
 ## Set a Smile's sharing preference
 
@@ -40,6 +51,10 @@ The preference is a small mark in the least significant bits of the PNG pixels. 
 
 ## Build the Android release
 
-On the project's Windows build machine, run `./android/build.ps1` in PowerShell. The script uses JDK 21, Android SDK Platform 35, and Build-Tools 35.0.1. You can pass `-JavaHome`, `-AndroidSdk`, and `-SigningDirectory` to select other local installations. It verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-Smile-Collector.apk`.
+After editing the drawing-tool sources under `editor/`, run `node editor/bundle.mjs` to rebuild the self-contained userscript. Use `node editor/bundle.mjs --check` to verify it is current. The original userscript installation URL and namespace are retained for existing installations.
+
+Run `node --test editor/pixels.test.mjs` for mask geometry and tolerance checks. With Node 22+, local Chromium, and a private reference dump available locally, `node tests/editor-ui.mjs` also exercises the native Smile and avatar editors.
+
+On the project's Windows build machine, run `./android/build.ps1` in PowerShell. The script uses JDK 21, Android SDK Platform 35, and Build-Tools 35.0.1. You can pass `-JavaHome`, `-AndroidSdk`, and `-SigningDirectory` to select other local installations. It verifies the APK signature, alignment, package identity, and bundled userscript before writing `android/build/Loneti-essentials.apk`.
 
 The release key is held outside Git in the publishing Windows account. Android updates must use the same signing key. A separate build needs its own PKCS12 keystore named `release.p12`, alias `release`, and a matching password saved as `release-password.dpapi` with PowerShell’s `ConvertFrom-SecureString` under the Windows account that will build it.

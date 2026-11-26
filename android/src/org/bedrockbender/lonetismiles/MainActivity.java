@@ -27,11 +27,15 @@ import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
 
 public final class MainActivity extends Activity {
@@ -39,6 +43,7 @@ public final class MainActivity extends Activity {
     private LinearLayout errorPane;
     private PackExporter exporter;
     private String bootstrap;
+    private boolean documentStartRegistered;
     private String failedUrl;
     private int navigation;
     private int connectedDocument = -1;
@@ -52,7 +57,7 @@ public final class MainActivity extends Activity {
             bootstrap = "(function(){'use strict';"
                     + "if(window!==window.top)return false;"
                     + "if(!['https://loneti.art','https://loneti.ru'].includes(location.origin)"
-                    + "||!/^\\/(pict|chat|settings)/.test(location.pathname))return false;"
+                    + "||!/^\\/(pict|chat|settings|draw)/.test(location.pathname))return false;"
                     + "if(window.__lonetiCollectorInstalled)return true;"
                     + asset("pack-export.js") + "\n" + asset("collector.user.js")
                     + "\nwindow.__lonetiCollectorInstalled=true;return true;})()";
@@ -109,6 +114,11 @@ public final class MainActivity extends Activity {
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         web.setWebViewClient(new SiteClient());
         web.setWebChromeClient(new SiteChrome());
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            WebViewCompat.addDocumentStartJavaScript(web, bootstrap,
+                    new HashSet<>(Arrays.asList("https://loneti.art", "https://loneti.ru")));
+            documentStartRegistered = true;
+        }
         if (state == null || web.restoreState(state) == null) web.loadUrl(homeOrigin() + "/");
     }
 
@@ -236,16 +246,17 @@ public final class MainActivity extends Activity {
             String origin = siteOrigin(uri);
             String path = uri.getPath();
             if (origin == null || path == null || !(path.startsWith("/pict")
-                    || path.startsWith("/chat") || path.startsWith("/settings"))) return;
+                    || path.startsWith("/chat") || path.startsWith("/settings") || path.startsWith("/draw"))) return;
             int document = navigation;
-            view.evaluateJavascript(bootstrap, result -> {
+            String script = documentStartRegistered ? "window.__lonetiCollectorInstalled === true" : bootstrap;
+            view.evaluateJavascript(script, result -> {
                 if (document != navigation || isDestroyed() || !origin.equals(currentOrigin())) return;
                 if ("true".equals(result)) {
                     if (connectedDocument != document) {
                         connectedDocument = document;
                         exporter.connect(view, origin);
                     }
-                } else if (!"false".equals(result)) {
+                } else {
                     Toast.makeText(MainActivity.this, R.string.update_engine, Toast.LENGTH_LONG).show();
                 }
             });
