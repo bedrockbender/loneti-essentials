@@ -150,25 +150,16 @@ a:hover { text-decoration-thickness: .12em; }
   font-size: .875rem;
 }
 
-.hero-art {
-  display: grid;
-  place-items: center;
-  min-block-size: 12rem;
+.hero-preview {
+  display: block;
+  min-inline-size: 0;
   overflow: hidden;
-  isolation: isolate;
   border: 1px solid var(--line);
-  border-radius: 1.05rem;
-  background:
-    radial-gradient(ellipse at 50% 59%, #495f3e 0%, transparent 68%),
-    repeating-linear-gradient(0deg, transparent 0 1.47rem, #49564755 1.47rem 1.5rem),
-    repeating-linear-gradient(90deg, transparent 0 1.47rem, #49564755 1.47rem 1.5rem),
-    #20271e;
+  border-radius: .65rem;
+  cursor: zoom-in;
 }
 
-.hero-art img {
-  inline-size: clamp(9rem, 37vw, 21rem);
-  filter: drop-shadow(0 1rem 1.5rem #070b0770);
-}
+.hero-preview img { inline-size: 100%; }
 
 .setup {
   display: grid;
@@ -311,7 +302,6 @@ code, kbd { overflow-wrap: anywhere; color: #f2f3ed; font-size: .92em; }
   .frame { inline-size: min(72rem, calc(100% - 4rem)); }
   .hero { grid-template-columns: 1.15fr 1fr; }
   .hero h1 { font-size: clamp(3.05rem, 8.1vw, 7.2rem); }
-  .hero-art { min-block-size: clamp(16rem, 31vw, 24rem); }
   .steps, .tool-list { grid-template-columns: minmax(6rem, 10rem) minmax(0, 1fr); gap: .85rem 1.25rem; }
   .steps dd, .tool-list dd { margin: 0; }
 }

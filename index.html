@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#151715">
   <title>Loneti essentials</title>
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
-  <link rel="stylesheet" href="./site.css?v=guide-screenshots">
+  <link rel="stylesheet" href="./site.css?v=pack-preview">
   <script defer src="./site.js?v=browser-guide"></script>
 </head>
 <body id="top">
@@ -42,7 +42,12 @@
           <p class="platform">APK для Android 8.0 и новее</p>
         </div>
       </div>
-      <div class="hero-art" aria-hidden="true"><img src="./icon.svg" width="512" height="512" alt=""></div>
+      <a class="hero-preview" data-locale="en-US" href="./screenshots/smile-packs.png" title="Open full-size screenshot">
+        <img src="./screenshots/smile-packs.png" width="1065" height="836" fetchpriority="high" alt="Five Smiles in an open pack, with controls to rename or download the pack">
+      </a>
+      <a class="hero-preview" data-locale="ru-RU" lang="ru-RU" href="./screenshots/smile-packs.png" title="Открыть снимок в полном размере" hidden>
+        <img src="./screenshots/smile-packs.png" width="1065" height="836" fetchpriority="high" alt="Пять смайлов в раскрытом наборе и кнопки «Переименовать» и «Скачать набор»">
+      </a>
     </section>
 
     <div class="frame setup" id="setup">
@@ -281,24 +286,12 @@
           <div data-locale="en-US">
             <h2>Organize your library</h2>
             <p>On <strong>My emotes</strong>, choose <strong>New pack</strong> and name it. Smiles begin in <strong>Unsorted</strong>. Use the menu below each Smile to move it to a pack, and choose <strong>Rename</strong> to edit a pack name.</p>
-            <figure class="guide-shot">
-              <a href="./screenshots/smile-packs.png" title="Open full-size screenshot">
-                <img src="./screenshots/smile-packs.png" width="1065" height="836" loading="lazy" decoding="async" alt="My Smiles with one pack expanded, five Smiles, and a pack selector beneath each image">
-              </a>
-              <figcaption>The open pack contains five Smiles. Use the dropdown beneath a Smile to move it to another pack.</figcaption>
-            </figure>
             <p>Expand pack headings in your library or in the Smile picker for comments and rooms. Inside a pack, the newest library entries appear first. Click a Smile in the picker to use it as usual.</p>
             <p class="note">LONETI stores the Smiles in your account. Your app or browser remembers which pack each Smile belongs to. To bring a named pack to another device, download its <code>.lesp</code> file and install it there.</p>
           </div>
           <div data-locale="ru-RU" lang="ru-RU" hidden>
             <h2>Организация библиотеки</h2>
             <p>На странице <strong>«Мои смайлы»</strong> нажмите <strong>«Новый набор»</strong> и назовите набор. Смайлы без набора находятся в разделе <strong>«Без набора»</strong>. Выберите набор в меню под нужным смайлом. Чтобы изменить название набора, нажмите <strong>«Переименовать»</strong>.</p>
-            <figure class="guide-shot">
-              <a href="./screenshots/smile-packs.png" title="Открыть снимок в полном размере">
-                <img src="./screenshots/smile-packs.png" width="1065" height="836" loading="lazy" decoding="async" alt="Страница «Мои смайлы» с раскрытым набором из пяти смайлов и списком наборов под каждым">
-              </a>
-              <figcaption>В раскрытом наборе пять смайлов. Чтобы переместить смайл в другой набор, откройте список под ним.</figcaption>
-            </figure>
             <p>Наборы раскрываются по нажатию на заголовок в библиотеке и в меню выбора смайлов в комментариях и чатах комнат. Новые записи библиотеки отображаются первыми. Нажмите на смайл в меню, чтобы использовать его как обычно.</p>
             <p class="note">Сами смайлы хранятся в аккаунте LONETI. Приложение или браузер запоминает, в какой набор вы положили каждый смайл. Чтобы перенести набор на другое устройство, скачайте файл <code>.lesp</code> и установите его там.</p>
           </div>
