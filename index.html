@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Loneti essentials adds drawing tools and shareable Smile packs to LONETI on Android and in your browser.">
-  <meta name="theme-color" content="#151715">
+  <meta name="theme-color" content="#080d18">
   <title>Loneti essentials</title>
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
   <link rel="canonical" href="https://bedrockbender.github.io/loneti-essentials/">
-  <link rel="stylesheet" href="./site.css?v=link-warning">
+  <link rel="stylesheet" href="./site.css?v=background-art">
   <script>
     if (location.hostname === 'bedrockbender.github.io' && /^\/loneti-smile-collector(?:\/index\.html|\/)?$/.test(location.pathname)) {
       location.replace('/loneti-essentials/' + location.search + location.hash);
@@ -28,38 +28,41 @@
   </header>
 
   <main>
-    <section class="hero frame" aria-labelledby="site-title">
-      <div class="hero-copy">
-        <h1 id="site-title">Loneti essentials</h1>
-        <div data-locale="en-US">
-          <p class="intro">The LONETI drawing editor gets gradients and a magic wand that selects areas by color. You can also collect your favorite Smiles in packs to share with friends.</p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="https://github.com/bedrockbender/loneti-essentials/releases/latest/download/Loneti-essentials.apk">Download for Android</a>
-            <a class="button button-secondary" href="#browser">I'm a PC user</a>
-            <a class="button button-source" href="https://github.com/bedrockbender/loneti-essentials"><img src="./icons/github.svg" width="18" height="18" alt="">Source code</a>
+    <section class="hero-scene" aria-labelledby="site-title">
+      <div class="hero frame">
+        <div class="hero-copy">
+          <h1 id="site-title">Loneti essentials</h1>
+          <div data-locale="en-US">
+            <p class="intro">The LONETI drawing editor gets gradients and a magic wand that selects areas by color. You can also collect your favorite Smiles in packs to share with friends.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="https://github.com/bedrockbender/loneti-essentials/releases/latest/download/Loneti-essentials.apk">Download for Android</a>
+              <a class="button button-secondary" href="#browser">I'm a PC user</a>
+              <a class="button button-source" href="https://github.com/bedrockbender/loneti-essentials"><img src="./icons/github.svg" width="18" height="18" alt="">Source code</a>
+            </div>
+            <p class="platform">Version 2.4.0 · Android 8.0 and newer</p>
           </div>
-          <p class="platform">Version 2.4.0 · Android 8.0 and newer</p>
-        </div>
-        <div data-locale="ru-RU" lang="ru-RU" hidden>
-          <p class="intro">В редакторе LONETI появляются градиенты и волшебная палочка для выделения по цвету. А любимые смайлы можно собирать в наборы и делиться ими с друзьями.</p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="https://github.com/bedrockbender/loneti-essentials/releases/latest/download/Loneti-essentials.apk">Скачать для Android</a>
-            <a class="button button-secondary" href="#browser">Я сижу с компа!</a>
-            <a class="button button-source" href="https://github.com/bedrockbender/loneti-essentials"><img src="./icons/github.svg" width="18" height="18" alt="">Исходный код</a>
+          <div data-locale="ru-RU" lang="ru-RU" hidden>
+            <p class="intro">В редакторе LONETI появляются градиенты и волшебная палочка для выделения по цвету. А любимые смайлы можно собирать в наборы и делиться ими с друзьями.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="https://github.com/bedrockbender/loneti-essentials/releases/latest/download/Loneti-essentials.apk">Скачать для Android</a>
+              <a class="button button-secondary" href="#browser">Я сижу с компа!</a>
+              <a class="button button-source" href="https://github.com/bedrockbender/loneti-essentials"><img src="./icons/github.svg" width="18" height="18" alt="">Исходный код</a>
+            </div>
+            <p class="platform">Версия 2.4.0 · Android 8.0 и новее</p>
           </div>
-          <p class="platform">Версия 2.4.0 · Android 8.0 и новее</p>
         </div>
+        <a class="hero-preview" data-locale="en-US" href="./screenshots/smile-packs.png" title="Open full-size screenshot">
+          <img src="./screenshots/smile-packs.png" width="1065" height="836" fetchpriority="high" alt="Five Smiles in an open pack, with controls to rename or download the pack">
+        </a>
+        <a class="hero-preview" data-locale="ru-RU" lang="ru-RU" href="./screenshots/smile-packs.png" title="Открыть снимок в полном размере" hidden>
+          <img src="./screenshots/smile-packs.png" width="1065" height="836" fetchpriority="high" alt="Пять смайлов в раскрытом наборе и кнопки «Переименовать» и «Скачать набор»">
+        </a>
       </div>
-      <a class="hero-preview" data-locale="en-US" href="./screenshots/smile-packs.png" title="Open full-size screenshot">
-        <img src="./screenshots/smile-packs.png" width="1065" height="836" fetchpriority="high" alt="Five Smiles in an open pack, with controls to rename or download the pack">
-      </a>
-      <a class="hero-preview" data-locale="ru-RU" lang="ru-RU" href="./screenshots/smile-packs.png" title="Открыть снимок в полном размере" hidden>
-        <img src="./screenshots/smile-packs.png" width="1065" height="836" fetchpriority="high" alt="Пять смайлов в раскрытом наборе и кнопки «Переименовать» и «Скачать набор»">
-      </a>
     </section>
 
     <div class="frame setup" id="setup">
       <aside class="link-warning">
+        <img class="warning-hampter" src="./art/hampter.png" width="110" height="131" alt="">
         <div data-locale="en-US"><strong>Posting links on LONETI</strong><p>Despite what you may have heard, the admin is alive and well. They still ban people for posting links on the Wall, in rooms, or in comments. Play it safe and share links through another service.</p></div>
         <div data-locale="ru-RU" lang="ru-RU" hidden><strong>Ссылки на LONETI</strong><p>Вопреки расхожему убеждению - админ живее всех живых и нещадно банит тех, кто оставляет ссылки на стене, в комнатах или в комментах. Будьте осторожны. старайтесь не постить ссылки на loneti, если есть желание поделиться - используйте сторонние сервисы</p></div>
       </aside>
