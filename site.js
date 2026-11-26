@@ -8,19 +8,25 @@
   const supported = new Set(['en-US', 'ru-RU']);
 
   // Keep the publisher's browser selector as the fallback on mobile and other browsers.
-  function extensionStore(agent) {
+  function desktopBrowser(agent) {
     if (/Android|iPhone|iPad|Mobile/i.test(agent)) return null;
-    if (/\bEdg\//.test(agent)) return 'https://microsoftedge.microsoft.com/addons/detail/iikmkjmpaadaobahmlepeloendndfphd';
-    if (/\bFirefox\//.test(agent)) return 'https://addons.mozilla.org/firefox/addon/tampermonkey/';
-    if (/\bChrome\//.test(agent) && !/\bOPR\//.test(agent)) {
-      return 'https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo';
-    }
+    if (/\bEdg\//.test(agent)) return 'edge';
+    if (/\bFirefox\//.test(agent)) return 'firefox';
+    if (/\bChrome\//.test(agent) && !/\bOPR\//.test(agent)) return 'chrome';
     return null;
   }
 
-  const store = extensionStore(navigator.userAgent || '');
-  if (store) {
-    for (const link of document.querySelectorAll('[data-install-extension]')) link.href = store;
+  const browser = desktopBrowser(navigator.userAgent || '');
+  if (browser) {
+    const stores = {
+      chrome: 'https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo',
+      edge: 'https://microsoftedge.microsoft.com/addons/detail/iikmkjmpaadaobahmlepeloendndfphd',
+      firefox: 'https://addons.mozilla.org/firefox/addon/tampermonkey/',
+    };
+    for (const link of document.querySelectorAll('[data-install-extension]')) link.href = stores[browser];
+    for (const instructions of document.querySelectorAll('details[data-browser]')) {
+      instructions.open = instructions.dataset.browser === browser;
+    }
   }
 
   function preferredLanguage() {

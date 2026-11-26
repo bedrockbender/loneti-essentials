@@ -4,7 +4,7 @@ Collect a Smile from a drawing comment or drawing-room chat, organize your libra
 
 ## Install with Tampermonkey
 
-1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser. On Chrome 138+ enable **Allow User Scripts** in Tampermonkey’s extension settings. If your Chromium browser lacks that switch, use **Developer mode** on the extensions page. [Tampermonkey permissions guide](https://www.tampermonkey.net/faq.php?locale=en&q=Q209)
+1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser. In Chrome, type `chrome://extensions` into a new tab. Find the Tampermonkey card, click **Details**, and turn on **Allow User Scripts**. In Edge, start at `edge://extensions`. If the switch is missing, enable **Developer mode** on the browser’s extensions list. Firefox users can go straight to step 2. [Tampermonkey permissions guide](https://www.tampermonkey.net/faq.php?locale=en&q=Q209)
 2. Open the [English and Russian installation guide](https://bedrockbender.github.io/loneti-smile-collector/), choose **Install LONETI Smile Collector**, and confirm in Tampermonkey.
 3. Reload your LONETI drawing or room. Hover over a Smile to see its outline, then click it. You can also use **Tab** to focus it and **Enter** to open the preview. Choose **Cancel** or press **Esc** to leave the preview without saving.
 

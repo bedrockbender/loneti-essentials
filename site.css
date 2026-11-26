@@ -152,13 +152,14 @@ a:hover { text-decoration-thickness: 2px; }
 .install-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: .8rem;
   margin: .2rem 0 0;
-  padding: 0;
+  padding: 0 0 1rem;
   list-style-position: inside;
 }
 
-.install-steps li {
+.install-steps > li {
   padding: .95rem;
   border: 1px solid #cdd9cd;
   border-radius: .32rem;
@@ -166,7 +167,7 @@ a:hover { text-decoration-thickness: 2px; }
   overflow-wrap: anywhere;
 }
 
-.install-steps li::marker {
+.install-steps > li::marker {
   color: var(--green-dark);
   font-size: 1.15rem;
   font-weight: 700;
@@ -191,11 +192,12 @@ a:hover { text-decoration-thickness: 2px; }
   line-height: 1.45;
 }
 
-.hero .setup-help {
-  max-width: none;
-  margin: .7rem 0 1rem;
-  font-size: .95rem;
-}
+.install-steps details { margin-top: .65rem; border-top: 1px solid var(--line); }
+.install-steps summary { padding: .45rem 0; color: var(--green-dark); font-weight: 700; cursor: pointer; }
+.install-steps details ol { margin: .2rem 0; padding-inline-start: 1.5rem; list-style-position: outside; }
+.install-steps details li + li { margin-top: .5rem; }
+.install-steps code { user-select: all; white-space: nowrap; font-size: .92em; }
+.install-steps .permission-help { font-size: .94rem; }
 
 .button {
   display: inline-flex;

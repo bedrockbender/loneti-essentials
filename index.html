@@ -48,21 +48,43 @@
             <li>
               <h2>Prepare your browser</h2>
               <a class="button button-secondary" data-install-extension href="https://www.tampermonkey.net/" target="_blank" rel="noopener" aria-label="Install Tampermonkey (opens in a new tab)">Install Tampermonkey</a>
-              <p><strong>Chrome or Edge.</strong> In Tampermonkey’s extension settings, turn on <strong>Allow User Scripts</strong> (Chrome 138 and later). If the switch is missing, use <strong>Developer mode</strong> on the browser’s Extensions page. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q209">Official permissions guide</a>.</p>
-              <p><strong>Firefox.</strong> Install the <a href="https://www.tampermonkey.net/index.php?browser=firefox">Firefox add-on</a> and go straight to step 2.</p>
+              <p>The button opens the extension store in a new tab. Follow the steps for your browser.</p>
+              <details name="browser-en" data-browser="chrome">
+                <summary>Google Chrome</summary>
+                <ol>
+                  <li>In the store, click <strong>Add to Chrome</strong>, then <strong>Add extension</strong>.</li>
+                  <li>Open a new tab. Type <code>chrome://extensions</code> in the address bar and press <kbd>Enter</kbd>. You’ll see Chrome’s list of extensions.</li>
+                  <li>Find the <strong>Tampermonkey</strong> card. Click <strong>Details</strong> and turn on <strong>Allow User Scripts</strong>.</li>
+                  <li>Come back to this guide and click the green button in step 2.</li>
+                </ol>
+                <p class="permission-help">Switch missing? Go back to <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q209">See Tampermonkey’s instructions</a>.</p>
+              </details>
+              <details name="browser-en" data-browser="edge">
+                <summary>Microsoft Edge</summary>
+                <ol>
+                  <li>In the store, click <strong>Get</strong> and confirm <strong>Add extension</strong>.</li>
+                  <li>Open a new tab. Type <code>edge://extensions</code> in the address bar and press <kbd>Enter</kbd>. You’ll see Edge’s list of extensions.</li>
+                  <li>On the <strong>Tampermonkey</strong> card, click <strong>Details</strong>. Turn on <strong>Allow User Scripts</strong> if it appears. If it’s missing, go back to <code>edge://extensions</code> and turn on <strong>Developer mode</strong>.</li>
+                  <li>Come back to this guide and continue with step 2.</li>
+                </ol>
+              </details>
+              <details name="browser-en" data-browser="firefox">
+                <summary>Mozilla Firefox</summary>
+                <p>In the store, click <strong>Add to Firefox</strong>, then <strong>Add</strong>. Come back to this guide and continue with step 2.</p>
+              </details>
             </li>
             <li>
               <h2>Add the userscript</h2>
-              <a class="button" href="./loneti-smile-collector.user.js">Install LONETI Smile Collector</a>
-              <p>Choose <strong>Install</strong> on Tampermonkey’s confirmation screen. The userscript requests no special Tampermonkey grants.</p>
+              <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Install LONETI Smile Collector</a>
+              <p>Click the green button above. Tampermonkey will show <strong>LONETI Smile Collector</strong>. Click <strong>Install</strong> on that screen, then return here.</p>
+              <details><summary>I see code instead of an Install button</summary><p>Check that Tampermonkey is enabled in your browser and that you finished step 1. Close the code tab and click the green button again. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Manual installation instructions</a>.</p></details>
             </li>
             <li>
               <h2>Try your first Smile</h2>
               <a class="button button-secondary" href="https://loneti.art/">Open LONETI</a>
-              <p>Reload any open LONETI tabs and sign in. Click a Smile in a drawing comment or room chat to open its preview.</p>
+              <p>Sign in to LONETI. If it was already open, reload the tab. Open a drawing and click a Smile in its comments. When you see the preview, setup is complete. Click <strong>Add to my Smiles</strong> to keep it or <strong>Cancel</strong> to close.</p>
             </li>
           </ol>
-          <p class="setup-help">If you see source code, copy it into a new script in the Tampermonkey dashboard and save it. <a href="https://www.tampermonkey.net/faq.php?locale=en&amp;q=Q102">Official manual installation guide</a>.</p>
         </div>
 
         <div data-locale="ru-RU" lang="ru-RU" hidden>
@@ -70,21 +92,43 @@
             <li>
               <h2>Подготовьте браузер</h2>
               <a class="button button-secondary" data-install-extension href="https://www.tampermonkey.net/" target="_blank" rel="noopener" aria-label="Установить Tampermonkey (откроется в новой вкладке)">Установить Tampermonkey</a>
-              <p><strong>Chrome или Edge.</strong> В настройках расширения Tampermonkey включите <strong>«Разрешить пользовательские скрипты»</strong> (<span lang="en-US">Allow User Scripts</span>, Chrome 138 и новее). Если переключателя нет, включите <strong>«Режим разработчика»</strong> на странице расширений. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q209">Официальная инструкция по разрешениям</a>.</p>
-              <p><strong>Firefox.</strong> Установите <a href="https://www.tampermonkey.net/index.php?browser=firefox">расширение для Firefox</a> и сразу переходите к шагу 2.</p>
+              <p>Кнопка откроет магазин расширений в новой вкладке. Дальше следуйте инструкции для своего браузера.</p>
+              <details name="browser-ru" data-browser="chrome">
+                <summary>Google Chrome</summary>
+                <ol>
+                  <li>В магазине нажмите <strong>«Установить»</strong>, затем <strong>«Установить расширение»</strong>.</li>
+                  <li>Откройте новую вкладку. Введите <code>chrome://extensions</code> в адресную строку и нажмите <kbd>Enter</kbd>. Откроется список расширений самого Chrome.</li>
+                  <li>Найдите карточку <strong>Tampermonkey</strong>. Нажмите <strong>«Сведения»</strong> и включите <strong>«Разрешить пользовательские скрипты»</strong>.</li>
+                  <li>Вернитесь на эту страницу и нажмите зелёную кнопку в шаге 2.</li>
+                </ol>
+                <p class="permission-help">Нет такого переключателя? Вернитесь на <code>chrome://extensions</code> и включите <strong>«Режим разработчика»</strong>. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q209">Инструкция Tampermonkey</a>.</p>
+              </details>
+              <details name="browser-ru" data-browser="edge">
+                <summary>Microsoft Edge</summary>
+                <ol>
+                  <li>В магазине нажмите кнопку установки и подтвердите добавление расширения.</li>
+                  <li>Откройте новую вкладку. Введите <code>edge://extensions</code> в адресную строку и нажмите <kbd>Enter</kbd>. Откроется список расширений самого Edge.</li>
+                  <li>На карточке <strong>Tampermonkey</strong> откройте сведения о расширении. Включите <strong>«Разрешить пользовательские скрипты»</strong>. Если такого переключателя нет, вернитесь на <code>edge://extensions</code> и включите <strong>«Режим разработчика»</strong>.</li>
+                  <li>Вернитесь на эту страницу и переходите к шагу 2.</li>
+                </ol>
+              </details>
+              <details name="browser-ru" data-browser="firefox">
+                <summary>Mozilla Firefox</summary>
+                <p>В магазине нажмите <strong>«Добавить в Firefox»</strong>, затем <strong>«Добавить»</strong>. Вернитесь на эту страницу и сразу переходите к шагу 2.</p>
+              </details>
             </li>
             <li>
               <h2>Добавьте скрипт</h2>
-              <a class="button" href="./loneti-smile-collector.user.js">Установить LONETI Smile Collector</a>
-              <p>Нажмите <strong>«Установить»</strong> в окне подтверждения Tampermonkey. Скрипт не запрашивает специальных разрешений Tampermonkey.</p>
+              <a class="button" href="./loneti-smile-collector.user.js" target="_blank" rel="noopener">Установить LONETI Smile Collector</a>
+              <p>Нажмите зелёную кнопку выше. В открывшемся окне Tampermonkey нажмите <strong>«Установить»</strong> и вернитесь на эту страницу.</p>
+              <details><summary>Вместо кнопки «Установить» вижу код</summary><p>Проверьте, что Tampermonkey включён в браузере и вы выполнили шаг 1. Закройте вкладку с кодом и ещё раз нажмите зелёную кнопку. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Как установить скрипт вручную</a>.</p></details>
             </li>
             <li>
               <h2>Попробуйте сохранить смайл</h2>
               <a class="button button-secondary" href="https://loneti.ru/">Открыть LONETI</a>
-              <p>Перезагрузите открытые вкладки LONETI и войдите в аккаунт. Нажмите на смайл в комментарии к рисунку или в чате комнаты, чтобы открыть предпросмотр.</p>
+              <p>Войдите в LONETI. Если сайт уже открыт, обновите вкладку. Откройте рисунок и нажмите на смайл в комментариях. Появилось окно предпросмотра? Значит, всё работает. Нажмите <strong>Добавить в «Мои смайлы»</strong> или закройте окно кнопкой <strong>«Отмена»</strong>.</p>
             </li>
           </ol>
-          <p class="setup-help">Если открылся исходный код, скопируйте его в новый скрипт в панели Tampermonkey и сохраните. <a href="https://www.tampermonkey.net/faq.php?locale=ru&amp;q=Q102">Официальная инструкция по ручной установке</a>.</p>
         </div>
       </div>
     </section>
@@ -165,7 +209,6 @@
               <li><strong>Editing a saved Smile.</strong> On <strong>My emotes</strong>, toggle <strong>Copy protection</strong> beneath the image and confirm. The script verifies a newly saved or existing matching edition in the pack before removing the old library entry. Earlier posts still use the image originally sent.</li>
               <li><strong>Recognizing protection.</strong> A black lock marks protected Smiles in the picker and in the corner of the collection preview. The collector blocks collection and excludes protected Smiles from pack downloads.</li>
             </ul>
-            <p class="note">Copy protection is a mark in the original PNG. Other tools can save or capture visible images, and image processing can remove the mark. A pack’s password protects the file until it is unlocked. Recipients can still share the unlocked artwork.</p>
           </div>
           <div data-locale="ru-RU" lang="ru-RU" hidden>
             <h2>Защита от копирования</h2>
@@ -174,7 +217,6 @@
               <li><strong>Для сохранённого смайла.</strong> На странице <strong>«Мои смайлы»</strong> измените флажок <strong>«Защита от копирования»</strong> под изображением и подтвердите замену. Скрипт проверит новую или уже существующую версию в наборе, прежде чем удалить старую запись библиотеки. В прошлых публикациях останется исходное изображение.</li>
               <li><strong>Как распознать защиту.</strong> Чёрный замок отмечает защищённые смайлы в меню выбора и в углу окна предпросмотра. Скрипт блокирует добавление таких смайлов в коллекцию и исключает их из скачиваемых наборов.</li>
             </ul>
-            <p class="note">Защита от копирования представляет собой метку в исходном PNG. Другие программы могут сохранить видимое изображение или сделать снимок экрана, а обработка изображения может удалить метку. Пароль защищает файл набора до его открытия. Получатели могут делиться расшифрованными изображениями.</p>
           </div>
         </section>
       </div>
