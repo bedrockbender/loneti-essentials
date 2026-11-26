@@ -51,6 +51,7 @@ build_test "$app" "$work/flow-test.apk"
 sign "$apk" "$work/instrumented-app.apk"
 "$adb" shell cmd connectivity airplane-mode enable
 "$adb" shell input keyevent 82
+"$adb" shell dumpsys webviewupdate
 
 "$adb" install "$apk"
 "$adb" install "$work/launcher-test.apk"
