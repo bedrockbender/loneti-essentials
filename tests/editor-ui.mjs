@@ -253,7 +253,7 @@ async function testEditor(mode) {
     assert.deepEqual(await pressed(), [name]);
     assert.equal(await evaluate('document.querySelector(' + JSON.stringify(options) + ').hidden'), false);
     assert.match(await evaluate('control("[data-active]").textContent.trim()'), localized[name]);
-    assert.equal(await evaluate('control("[data-end]").hidden'), false);
+    assert.equal(await evaluate('control("[data-end]") === null'), true, 'no separate Exit tool control');
     if (name !== 'polygon') {
       assert.equal(await evaluate(el('[data-' + name + '-options]') + '.hidden'), false);
     }
@@ -265,7 +265,6 @@ async function testEditor(mode) {
   assert.deepEqual(await pressed(), [], 'native tool clears custom active state');
   assert.equal(await evaluate('getComputedStyle(fixtureCanvas).pointerEvents'), 'none', 'native tool gets the canvas back');
   assert.equal(await evaluate('document.querySelector(' + JSON.stringify(options) + ').hidden'), true, 'native options are restored');
-  assert.equal(await evaluate('control("[data-end]").hidden'), true);
 
   async function pointer(x, y, endX = x, endY = y) {
     await evaluate('fixtureEditor().surface.scrollIntoView({block:"center"})');
@@ -330,7 +329,8 @@ async function testEditor(mode) {
 
   await polygon([[-15,50],[150,50],[150,125],[-15,125]]);
   assert.equal(await evaluate('count()'), 150 * 75, 'polygon clips the portion outside the canvas');
-  const pixelSamples = '[pixel(18,85),pixel(85,85),pixel(148,85),pixel(188,85)]';
+  const greenX = mode === 'smile' ? 57 : 85;
+  const pixelSamples = '[pixel(18,85),pixel(' + greenX + ',85),pixel(148,85),pixel(188,85)]';
   const before = await evaluate(pixelSamples);
   const historyIndex = await evaluate('historyState.current_index');
   await choose('gradient');
@@ -339,12 +339,87 @@ async function testEditor(mode) {
   await set('[data-stop-color]', '#0000ff');
   await click('[data-add-stop]');
   await set('[data-stop-color]', '#00ff00');
+  if (mode === 'smile') {
+    const marker = '[data-rail] > button[aria-pressed="true"]';
+    const slider = el('[data-position]');
+    await evaluate(el('[data-rail]') + '.style.maxWidth="250px"');
+    function position() {
+      return evaluate('Number(' + slider + '.value)');
+    }
+    async function grip() {
+      return evaluate(`(() => {
+        const marker=${el(marker)};
+        marker.scrollIntoView({block:'center'});
+        const box=marker.getBoundingClientRect();
+        const rail=marker.parentElement.getBoundingClientRect();
+        const offset=Math.min(7,box.width/2-1);
+        const x=box.left+box.width/2+offset, y=box.top+box.height/2;
+        const target=marker.getRootNode().elementFromPoint(x,y);
+        if (target!==marker) throw Error('Gradient grip intercepted by '+target?.localName+' at '+x+','+y);
+        return {x,y,width:rail.width,left:rail.left,right:rail.right,top:rail.top};
+      })()`);
+    }
+    function stopState() {
+      return evaluate(`(() => {
+        const active=${el(marker)}, rail=${el('[data-rail]')};
+        return {same:active===window.testGreenStop,count:rail.querySelectorAll(':scope > button').length,
+          position:Number(${slider}.value),markerPosition:parseFloat(active.style.left),color:${el('[data-stop-color]')}.value};
+      })()`);
+    }
+    async function checkStop(target, why) {
+      const view = await stopState();
+      assert.ok(Math.abs(view.position - target) <= 1, why + ': position ' + view.position);
+      assert.equal(view.markerPosition, view.position, why + ': marker and Position slider agree');
+      assert.equal(view.color, '#00ff00', why + ': green stop moved');
+      assert.equal(view.same, true, why + ': marker remains mounted');
+      assert.equal(view.count, 3, why + ': no duplicate stop');
+    }
+    await evaluate('window.testGreenStop=' + el(marker));
+    const start = await grip();
+    assert.equal(await position(), 50);
+    const mouse = (type, x, buttons, y = start.y) => call('Input.dispatchMouseEvent', {
+      type,x,y,buttons,...(type === 'mouseMoved' ? {} : {button:'left',clickCount:1}),
+    });
+    await mouse('mouseMoved', start.x, 0);
+    await mouse('mousePressed', start.x, 1);
+    await mouse('mouseMoved', start.left + 2, 1);
+    assert.equal(await position(), 0, 'off-center drag past the first stop clamps to 0%');
+    await mouse('mouseMoved', start.right + 32, 1);
+    assert.equal(await position(), 100, 'held drag outside the rail clamps to 100%');
+    const mouseTarget = start.x + start.width * .20;
+    // Reenter over unoccupied rail space. Releasing there must not add a stop.
+    await mouse('mouseMoved', mouseTarget, 1, start.top + 3);
+    await mouse('mouseReleased', mouseTarget, 0, start.top + 3);
+    await checkStop(70, 'mouse drag');
+
+    await call('Emulation.setTouchEmulationEnabled', {enabled:true,maxTouchPoints:1});
+    const touch = await grip();
+    const target = touch.x + touch.width * (.30 - (await position()) / 100);
+    await call('Input.dispatchTouchEvent', {type:'touchStart',touchPoints:[{x:touch.x,y:touch.y}]});
+    await call('Input.dispatchTouchEvent', {type:'touchMove',touchPoints:[{x:target,y:touch.y}]});
+    await call('Input.dispatchTouchEvent', {type:'touchEnd',touchPoints:[]});
+    await call('Emulation.setTouchEmulationEnabled', {enabled:false});
+    await checkStop(30, 'touch drag');
+
+    const touched = await position();
+    const keypresses = [[el(marker),'ArrowRight',39,touched + 1],[slider,'ArrowLeft',37,touched]];
+    for (const [control, key, code, value] of keypresses) {
+      await evaluate(control + '.focus()');
+      const arrow = {key,code:key,windowsVirtualKeyCode:code};
+      await call('Input.dispatchKeyEvent', {type:'keyDown',...arrow});
+      await call('Input.dispatchKeyEvent', {type:'keyUp',...arrow});
+      assert.equal(await position(), value, 'Stop position responds to ' + key);
+      await checkStop(value, 'keyboard adjustment');
+    }
+  }
   await pointer(18,85,148,85);
   const [red, green, blue, outside] = await evaluate(pixelSamples);
   assert.ok(red[0] > 240 && green[1] > 230 && blue[2] > 240, 'three gradient stops are visible');
+  if (mode === 'smile') assert.ok((await evaluate('pixel(85,85)'))[1] < 215, 'green peak moved from its original midpoint');
   assert.deepEqual(outside, before[3], 'gradient clips to selection');
   assert.equal(await evaluate('historyState.current_index'), historyIndex + 1, 'one native history edit');
   assert.equal(await evaluate('Boolean(historyState.abort(historyState.getStateAbort()))'), true);
   assert.deepEqual(await evaluate(pixelSamples), before, 'native undo restores pixels');
   console.log('PASS native ' + mode + ' editor toolbar, hints, native handoff, polygon, wand, masked gradient and undo');
+  if (mode === 'smile') console.log('PASS gradient stop mouse, touch and keyboard movement, clamping and paint');
 }

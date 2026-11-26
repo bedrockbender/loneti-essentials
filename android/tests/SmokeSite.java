@@ -96,14 +96,20 @@ final class SmokeSite extends WebViewClient {
                         + "<div id='brushes'><div class='one_tool tool_brush active_tool'"
                         + " data-tool='brush' title='Brush'></div></div></div>"
                         + "<div id='cont_config'></div></div></div>"
-                        + "<div class='js--container-work-canvas'><canvas class='js--work-canvas'></canvas></div>"
+                        + "<div class='js--container-work-canvas' style='position:relative'>"
+                        + "<canvas class='js--work-canvas'></canvas></div>"
                         + "</div>"
                         + "<iframe src='/draw/frame' title='Frame fixture' hidden></iframe>",
                 "window.fixtureHookAtHead=window.__lonetiCollectorInstalled===true"
                         + "&&typeof Object.getOwnPropertyDescriptor(Object.prototype,'transform_canvas')?.set==='function';"
-                        + "const nativeEngine={realCoords(){},drawing_area:{getContainerWork(){}},"
-                        + "users_canvas:{getMyUser(){}},layer_actions:{checkLockLayer(){}}};"
-                        + "nativeEngine.transform_canvas={coordsToDisplay(){},transform:{getInverted(){}}};"
+                        + "let fixtureLayer;const fixtureUser={user_layers:{getActiveLayer(){"
+                        + "const canvas=document.querySelector('.js--work-canvas');"
+                        + "return fixtureLayer||(fixtureLayer={$layer:canvas,ctx:canvas.getContext('2d')});"
+                        + "}},events_draw:{setDraw(){}}};"
+                        + "const nativeEngine={realCoords(){},drawing_area:{getContainerWork(){"
+                        + "return document.querySelector('.js--container-work-canvas');}},"
+                        + "users_canvas:{getMyUser(){return fixtureUser;}},layer_actions:{checkLockLayer(){}}};"
+                        + "nativeEngine.transform_canvas={coordsToDisplay(point){return point;},transform:{getInverted(){}}};"
                         + "window.fixtureObserverRemoved=!Object.getOwnPropertyDescriptor(Object.prototype,'transform_canvas');");
     }
 

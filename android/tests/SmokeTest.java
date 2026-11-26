@@ -10,12 +10,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
+import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
+import org.json.JSONArray;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -99,6 +101,7 @@ public final class SmokeTest extends Instrumentation {
                 + "&&document.querySelectorAll('#tools > .one_tool[data-tool]').length===4"
                 + "&&document.querySelectorAll('#tools button[data-le-tool]').length===3",
                 "one early drawing hook, three drawing tools in the native panel, one canvas overlay and no iframe hook");
+        dragGradientStop(fixtureWeb[0]);
         runOnMainSync(activity::onBackPressed);
         awaitText("Local LONETI smoke fixture");
         click("Open smoke editor");
@@ -151,6 +154,58 @@ public final class SmokeTest extends Instrumentation {
             require(fixtureSite[0].saveCount() == 2, "Pack export and preview must not save a Smile");
         } finally {
             context.getContentResolver().delete(fixture, null, null);
+        }
+    }
+
+    private void dragGradientStop(WebView web) throws Exception {
+        String options = "document.querySelector('#cont_config [data-loneti-essentials=options]').shadowRoot";
+        evaluate(web, "document.querySelector('#tools button[data-le-tool=gradient]').click()");
+        awaitJs(web, options + ".querySelector('[data-rail] button').getBoundingClientRect().width>0",
+                "the Gradient color stop controls");
+        JSONArray geometry = new JSONArray(evaluate(web, "(()=>{const options=" + options
+                + ", rail=options.querySelector('[data-rail]'), stop=rail.firstElementChild;"
+                + "stop.addEventListener('pointerdown',event=>{window.fixtureStopPointer=event.pointerType;},{once:true});"
+                + "const r=stop.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2,"
+                + "rail.clientWidth*0.40,innerWidth];})()"));
+        int[] origin = new int[2];
+        int[] width = new int[1];
+        runOnMainSync(() -> {
+            web.getLocationOnScreen(origin);
+            width[0] = web.getWidth();
+        });
+        float scale = width[0] / (float) geometry.getDouble(3);
+        float x = origin[0] + scale * (float) geometry.getDouble(0);
+        float y = origin[1] + scale * (float) geometry.getDouble(1);
+        float distance = scale * (float) geometry.getDouble(2);
+        long start = SystemClock.uptimeMillis();
+        injectTouch(start, MotionEvent.ACTION_DOWN, x, y);
+        for (int step = 1; step <= 5; step++) {
+            SystemClock.sleep(30);
+            injectTouch(start, MotionEvent.ACTION_MOVE, x + distance * step / 5, y);
+        }
+        injectTouch(start, MotionEvent.ACTION_UP, x + distance, y);
+        awaitJs(web, "(()=>{const rail=" + options + ".querySelector('[data-rail]');"
+                + "const position=parseFloat(rail.firstElementChild.style.left);"
+                + "return window.fixtureStopPointer==='touch'&&rail.children.length===2&&position>=33&&position<=47;})()",
+                "a touch drag moving the first stop to about 40% without adding a stop");
+    }
+
+    private void injectTouch(long start, int action, float x, float y) {
+        MotionEvent.PointerProperties finger = new MotionEvent.PointerProperties();
+        finger.id = 0;
+        finger.toolType = MotionEvent.TOOL_TYPE_FINGER;
+        MotionEvent.PointerCoords position = new MotionEvent.PointerCoords();
+        position.x = x;
+        position.y = y;
+        position.pressure = action == MotionEvent.ACTION_UP ? 0 : 1;
+        position.size = 1;
+        MotionEvent event = MotionEvent.obtain(start, SystemClock.uptimeMillis(), action, 1,
+                new MotionEvent.PointerProperties[]{finger}, new MotionEvent.PointerCoords[]{position},
+                0, 0, 1, 1, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
+        try {
+            require(automation.injectInputEvent(event, true), "Could not inject Android touch event " + action);
+        } finally {
+            event.recycle();
         }
     }
 
