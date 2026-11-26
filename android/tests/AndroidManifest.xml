@@ -1,0 +1,13 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="test.loneti.smoke">
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+    <application android:label="LONETI Smoke Test" />
+    <instrumentation
+        android:name=".SmokeTest"
+        android:targetPackage="test.loneti.smoke" />
+</manifest>
