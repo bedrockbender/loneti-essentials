@@ -169,10 +169,15 @@ a:hover { text-decoration-thickness: .12em; }
 }
 
 .platform {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: .85rem;
   margin: .65rem 0 0;
   color: #e6e9ed;
   font-size: .875rem;
 }
+
+.download-count { color: var(--muted); }
 
 .hero-preview {
   display: block;

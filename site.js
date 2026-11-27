@@ -63,4 +63,40 @@
 
   displayLanguage(preferredLanguage());
   switcher.hidden = false;
+
+  async function showAndroidDownloads() {
+    let url = 'https://api.github.com/repos/bedrockbender/loneti-essentials/releases?per_page=100';
+    let total = null;
+
+    while (url) {
+      const response = await fetch(url);
+      if (!response.ok) return;
+      for (const release of await response.json()) {
+        for (const asset of release.assets) {
+          if (asset.name !== 'Loneti-essentials.apk') continue;
+          if (!Number.isSafeInteger(asset.download_count) || asset.download_count < 0) return;
+          total = (total ?? 0) + asset.download_count;
+        }
+      }
+      url = response.headers.get('link')?.match(/<([^>]+)>;\s*rel="next"/)?.[1];
+    }
+
+    if (total === null) return;
+    for (const count of document.querySelectorAll('[data-android-downloads]')) {
+      const locale = count.closest('[data-locale]').dataset.locale;
+      const number = new Intl.NumberFormat(locale).format(total);
+      const plural = new Intl.PluralRules(locale).select(total);
+      if (locale === 'ru-RU') {
+        const downloads = { one: 'скачивание', few: 'скачивания', many: 'скачиваний' };
+        count.textContent = `Всего ${number} ${downloads[plural]}`;
+      } else {
+        count.textContent = `${number} total ${plural === 'one' ? 'download' : 'downloads'}`;
+      }
+      count.hidden = false;
+    }
+  }
+
+  showAndroidDownloads().catch(() => {
+    // The count is optional when GitHub is unavailable.
+  });
 })();
